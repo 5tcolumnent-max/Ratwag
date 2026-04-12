@@ -3,7 +3,6 @@ import {
   Video,
   Upload,
   Play,
-  Pause,
   Square,
   Camera,
   Mic,
@@ -17,8 +16,6 @@ import {
   Hand,
   Eye,
   Zap,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';

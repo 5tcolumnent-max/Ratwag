@@ -4,12 +4,6 @@ import {
   RefreshCw,
   Filter,
   Download,
-  Trash2,
-  Circle,
-  AlertTriangle,
-  Info,
-  CheckCircle,
-  AlertCircle,
   ChevronDown,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -58,15 +52,6 @@ const MOCK_SEED_ENTRIES: Omit<LogEntry, 'id'>[] = [
   { timestamp: new Date(Date.now() - 300000).toISOString(), module: 'System', action: 'HEARTBEAT', detail: 'All modules responsive — latency: <12ms', severity: 'info', entityId: '', entityType: '' },
 ];
 
-function SeverityIcon({ severity }: { severity: Severity }) {
-  switch (severity) {
-    case 'critical': return <AlertTriangle className="w-3 h-3 text-red-400" />;
-    case 'warning': return <AlertCircle className="w-3 h-3 text-amber-400" />;
-    case 'success': return <CheckCircle className="w-3 h-3 text-emerald-400" />;
-    case 'debug': return <Circle className="w-3 h-3 text-slate-600" />;
-    default: return <Info className="w-3 h-3 text-sky-400" />;
-  }
-}
 
 function LogLine({ entry }: { entry: LogEntry }) {
   const cfg = SEVERITY_CONFIG[entry.severity] || SEVERITY_CONFIG.info;

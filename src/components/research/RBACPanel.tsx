@@ -1,4 +1,4 @@
-import { User, Lock, CheckCircle, Clock, ShieldCheck, Key, Eye, CreditCard as Edit3, Radio, Download } from 'lucide-react';
+import { User, Lock, CheckCircle, Clock, ShieldCheck, Key, Eye, CreditCard as Edit3, Radio } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
 export interface RBACPermission {

@@ -4,7 +4,6 @@ import {
   Search,
   Plus,
   RefreshCw,
-  Clock,
   Shield,
   ChevronDown,
   ChevronUp,
@@ -21,7 +20,6 @@ import type { IncidentRecord } from '../../lib/database.types';
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
 const CATEGORIES = ['security', 'availability', 'integrity', 'confidentiality', 'compliance'] as const;
-const NIST_PHASES = ['preparation', 'detection', 'containment', 'eradication', 'recovery', 'lessons_learned'] as const;
 
 const PHASE_ORDER = ['preparation', 'detection', 'containment', 'eradication', 'recovery', 'lessons_learned'];
 

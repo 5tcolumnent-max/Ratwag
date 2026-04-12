@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { DollarSign, AlertTriangle, CheckCircle, Info, ChevronDown, ChevronRight, BookOpen, FileCheck, Clock, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, ChevronDown, ChevronRight, BookOpen, FileCheck, Clock, ShieldCheck, ShieldAlert } from 'lucide-react';
 import type { BudgetItem } from '../../lib/database.types';
 import {
   generateCostAccountingReport,

@@ -7,7 +7,6 @@ import {
   buildSensorTrends,
   buildAuditLog,
   getAuditReviewStatusClasses,
-  NIST_CI_CONTROLS,
 } from '../../telemetry/PerimeterTelemetry';
 import { PERIMETER_SENSORS } from '../../telemetry/InfrastructureMonitor';
 import type { NISTCIProfileResult } from '../../telemetry/PerimeterTelemetry';

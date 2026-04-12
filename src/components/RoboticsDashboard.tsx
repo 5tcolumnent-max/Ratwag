@@ -1,19 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Navigation,
   Battery,
   Wifi,
   Thermometer,
-  RefreshCw,
-  MapPin,
   Activity,
   Radio,
-  ArrowUp,
   Waves,
   Target,
-  Zap,
   AlertTriangle,
-  CheckCircle,
   Wind,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -226,7 +220,7 @@ function SonarDisplay({ depthM, maxDepthM }: { depthM: number; maxDepthM: number
         opacity="0.7"
       />
       <polygon
-        points={`0,60 ${points.split(' ').map((p, i) => p).join(' ')} 160,60`}
+        points={`0,60 ${points.split(' ').map((p) => p).join(' ')} 160,60`}
         fill="rgba(14,165,233,0.08)"
       />
       <text x="2" y="10" fontSize="7" fill="rgb(100,116,139)">0m</text>

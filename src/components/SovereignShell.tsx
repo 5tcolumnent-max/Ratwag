@@ -12,7 +12,6 @@ import {
   Activity,
   Wifi,
   Lock,
-  AlertTriangle,
   X,
   FileWarning,
   Printer,

@@ -285,13 +285,13 @@ export default function SafetyScanner() {
       scanId,
       imageName: uploadedFile?.name || 'simulated-input.tif',
       scannedAt: new Date().toISOString(),
-      sampleLabel: label,
       ...template,
+      sampleLabel: label,
       confidencePct: template.confidencePct + Math.round((Math.random() - 0.5) * 8),
     };
 
     if (session) {
-      const { data } = await supabase.from('safety_scan_results').insert({
+      await supabase.from('safety_scan_results').insert({
         user_id: session.user.id,
         scan_id: scanId,
         sample_label: label,
@@ -308,7 +308,7 @@ export default function SafetyScanner() {
         notes: newResult.notes,
         analyst: newResult.analyst,
         status: newResult.status,
-      }).select().maybeSingle();
+      });
     }
 
     setResults(prev => [newResult, ...prev]);
