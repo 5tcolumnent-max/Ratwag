@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Microscope,
   Upload,
@@ -250,6 +250,39 @@ export default function SafetyScanner() {
   const [sampleLabel, setSampleLabel] = useState('');
   const [filterHazard, setFilterHazard] = useState('all');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!session) return;
+    async function loadResults() {
+      const { data } = await supabase
+        .from('safety_scan_results')
+        .select('*')
+        .eq('user_id', session!.user.id)
+        .order('scanned_at', { ascending: false })
+        .limit(50);
+      if (data && data.length > 0) {
+        setResults(data.map(r => ({
+          id: r.id,
+          scanId: r.scan_id,
+          sampleLabel: r.sample_label,
+          imageName: r.image_name,
+          hazardLevel: r.hazard_level as HazardLevel,
+          confidencePct: r.confidence_pct,
+          pathogenDetected: r.pathogen_detected,
+          pathogenClass: r.pathogen_class,
+          morphologySignatures: r.morphology_signatures,
+          gramStain: r.gram_stain as GramStain,
+          motility: r.motility,
+          shape: r.shape as Shape,
+          notes: r.notes,
+          analyst: r.analyst,
+          status: r.status,
+          scannedAt: r.scanned_at,
+        })));
+      }
+    }
+    loadResults();
+  }, [session]);
 
   const logToAudit = useCallback(async (action: string, detail: string, severity = 'info') => {
     if (!session) return;

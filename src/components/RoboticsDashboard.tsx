@@ -35,10 +35,11 @@ interface DroneTelemetry {
   temperatureC: number;
   payloadActive: boolean;
   missionId: string;
+  dbId?: string;
 }
 
-const INITIAL_TELEMETRY: Record<string, DroneTelemetry> = {
-  'AER-01': {
+const SEED_TELEMETRY: Omit<DroneTelemetry, 'dbId'>[] = [
+  {
     droneId: 'AER-01', droneType: 'aerial', status: 'active',
     battery: 78, latitude: 38.897957, longitude: -77.036560,
     altitudeM: 42.5, depthM: 0, headingDeg: 127,
@@ -46,7 +47,7 @@ const INITIAL_TELEMETRY: Record<string, DroneTelemetry> = {
     sonarDepthM: 0, obstacleDetected: false, obstacleDistanceM: null,
     temperatureC: 18.4, payloadActive: true, missionId: 'MSNS-2026-001',
   },
-  'AER-02': {
+  {
     droneId: 'AER-02', droneType: 'aerial', status: 'standby',
     battery: 100, latitude: 38.899100, longitude: -77.035200,
     altitudeM: 0, depthM: 0, headingDeg: 0,
@@ -54,7 +55,7 @@ const INITIAL_TELEMETRY: Record<string, DroneTelemetry> = {
     sonarDepthM: 0, obstacleDetected: false, obstacleDistanceM: null,
     temperatureC: 22.1, payloadActive: false, missionId: 'MSNS-2026-001',
   },
-  'AQU-01': {
+  {
     droneId: 'AQU-01', droneType: 'aquatic', status: 'active',
     battery: 63, latitude: 38.896200, longitude: -77.038400,
     altitudeM: 0, depthM: 14.7, headingDeg: 214,
@@ -62,7 +63,7 @@ const INITIAL_TELEMETRY: Record<string, DroneTelemetry> = {
     sonarDepthM: 31.8, obstacleDetected: true, obstacleDistanceM: 4.2,
     temperatureC: 9.8, payloadActive: true, missionId: 'MSNS-2026-002',
   },
-  'AQU-02': {
+  {
     droneId: 'AQU-02', droneType: 'aquatic', status: 'returning',
     battery: 21, latitude: 38.895800, longitude: -77.037100,
     altitudeM: 0, depthM: 2.3, headingDeg: 45,
@@ -70,7 +71,38 @@ const INITIAL_TELEMETRY: Record<string, DroneTelemetry> = {
     sonarDepthM: 2.3, obstacleDetected: false, obstacleDistanceM: null,
     temperatureC: 11.2, payloadActive: false, missionId: 'MSNS-2026-002',
   },
-};
+];
+
+function rowToTelemetry(row: {
+  id: string; drone_id: string; drone_type: string; status: string;
+  battery_pct: number; latitude: number; longitude: number; altitude_m: number;
+  depth_m: number; heading_deg: number; speed_ms: number; signal_strength: number;
+  lidar_range_m: number; sonar_depth_m: number; obstacle_detected: boolean;
+  obstacle_distance_m: number | null; temperature_c: number; payload_active: boolean;
+  mission_id: string;
+}): DroneTelemetry {
+  return {
+    dbId: row.id,
+    droneId: row.drone_id,
+    droneType: row.drone_type as DroneType,
+    status: row.status as DroneStatus,
+    battery: row.battery_pct,
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    altitudeM: Number(row.altitude_m),
+    depthM: Number(row.depth_m),
+    headingDeg: row.heading_deg,
+    speedMs: Number(row.speed_ms),
+    signal: row.signal_strength,
+    lidarRangeM: Number(row.lidar_range_m),
+    sonarDepthM: Number(row.sonar_depth_m),
+    obstacleDetected: row.obstacle_detected,
+    obstacleDistanceM: row.obstacle_distance_m !== null ? Number(row.obstacle_distance_m) : null,
+    temperatureC: Number(row.temperature_c),
+    payloadActive: row.payload_active,
+    missionId: row.mission_id,
+  };
+}
 
 function statusColor(s: DroneStatus) {
   switch (s) {
@@ -195,8 +227,8 @@ function SonarDisplay({ depthM, maxDepthM }: { depthM: number; maxDepthM: number
   const [pingOffset, setPingOffset] = useState(0);
 
   useEffect(() => {
-    const i = setInterval(() => setPingOffset(p => (p + 2) % 100), 50);
-    return () => clearInterval(i);
+    const iv = setInterval(() => setPingOffset(p => (p + 2) % 100), 50);
+    return () => clearInterval(iv);
   }, []);
 
   const points = Array.from({ length: 20 }, (_, i) => {
@@ -367,11 +399,77 @@ function DroneCard({ telemetry, onStatusChange }: {
 
 export default function RoboticsDashboard() {
   const { session } = useAuth();
-  const [telemetry, setTelemetry] = useState(INITIAL_TELEMETRY);
+  const [telemetry, setTelemetry] = useState<Record<string, DroneTelemetry>>({});
   const [ticks, setTicks] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const persistRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (!session) return;
+
+    async function loadOrSeed() {
+      const { data } = await supabase
+        .from('robotics_telemetry')
+        .select('*')
+        .eq('user_id', session!.user.id)
+        .order('drone_id');
+
+      if (data && data.length > 0) {
+        const map: Record<string, DroneTelemetry> = {};
+        data.forEach(row => {
+          const t = rowToTelemetry(row);
+          map[t.droneId] = t;
+        });
+        setTelemetry(map);
+      } else {
+        const inserts = SEED_TELEMETRY.map(t => ({
+          user_id: session!.user.id,
+          drone_id: t.droneId,
+          drone_type: t.droneType,
+          mission_id: t.missionId,
+          status: t.status,
+          battery_pct: Math.round(t.battery),
+          latitude: t.latitude,
+          longitude: t.longitude,
+          altitude_m: t.altitudeM,
+          depth_m: t.depthM,
+          heading_deg: t.headingDeg,
+          speed_ms: t.speedMs,
+          signal_strength: t.signal,
+          lidar_range_m: t.lidarRangeM,
+          sonar_depth_m: t.sonarDepthM,
+          obstacle_detected: t.obstacleDetected,
+          obstacle_distance_m: t.obstacleDistanceM,
+          temperature_c: t.temperatureC,
+          payload_active: t.payloadActive,
+          spatial_map_json: '{}',
+        }));
+        const { data: seeded } = await supabase
+          .from('robotics_telemetry')
+          .insert(inserts)
+          .select();
+
+        const map: Record<string, DroneTelemetry> = {};
+        if (seeded) {
+          seeded.forEach(row => {
+            const t = rowToTelemetry(row);
+            map[t.droneId] = t;
+          });
+        } else {
+          SEED_TELEMETRY.forEach(t => { map[t.droneId] = t; });
+        }
+        setTelemetry(map);
+      }
+      setLoaded(true);
+    }
+
+    loadOrSeed();
+  }, [session]);
+
+  useEffect(() => {
+    if (!loaded) return;
+
     intervalRef.current = setInterval(() => {
       setTelemetry(prev => {
         const updated = { ...prev };
@@ -403,14 +501,55 @@ export default function RoboticsDashboard() {
     }, 1000);
 
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  }, [loaded]);
+
+  useEffect(() => {
+    if (!session || !loaded) return;
+
+    persistRef.current = setInterval(async () => {
+      const drones = Object.values(telemetry);
+      for (const t of drones) {
+        if (!t.dbId) continue;
+        await supabase
+          .from('robotics_telemetry')
+          .update({
+            status: t.status,
+            battery_pct: Math.round(t.battery),
+            latitude: t.latitude,
+            longitude: t.longitude,
+            altitude_m: t.altitudeM,
+            depth_m: t.depthM,
+            heading_deg: t.headingDeg,
+            speed_ms: t.speedMs,
+            signal_strength: Math.round(t.signal),
+            lidar_range_m: t.lidarRangeM,
+            sonar_depth_m: t.sonarDepthM,
+            obstacle_detected: t.obstacleDetected,
+            obstacle_distance_m: t.obstacleDistanceM,
+            temperature_c: t.temperatureC,
+          })
+          .eq('id', t.dbId);
+      }
+    }, 15000);
+
+    return () => { if (persistRef.current) clearInterval(persistRef.current); };
+  }, [session, loaded, telemetry]);
 
   const handleStatusChange = useCallback(async (droneId: string, status: DroneStatus) => {
     setTelemetry(prev => ({
       ...prev,
       [droneId]: { ...prev[droneId], status },
     }));
+
     if (session) {
+      const drone = telemetry[droneId];
+      if (drone?.dbId) {
+        await supabase
+          .from('robotics_telemetry')
+          .update({ status })
+          .eq('id', drone.dbId);
+      }
+
       await supabase.from('audit_log_entries').insert({
         user_id: session.user.id,
         module: 'RoboticsDashboard',
@@ -419,12 +558,15 @@ export default function RoboticsDashboard() {
         severity: status === 'emergency' ? 'critical' : 'info',
       });
     }
-  }, [session]);
+  }, [session, telemetry]);
 
-  const activeCount = Object.values(telemetry).filter(t => t.status === 'active').length;
-  const emergencyCount = Object.values(telemetry).filter(t => t.status === 'emergency').length;
-  const obstacleCount = Object.values(telemetry).filter(t => t.obstacleDetected).length;
-  const avgBattery = Math.round(Object.values(telemetry).reduce((s, t) => s + t.battery, 0) / Object.values(telemetry).length);
+  const droneList = Object.values(telemetry);
+  const activeCount = droneList.filter(t => t.status === 'active').length;
+  const emergencyCount = droneList.filter(t => t.status === 'emergency').length;
+  const obstacleCount = droneList.filter(t => t.obstacleDetected).length;
+  const avgBattery = droneList.length > 0
+    ? Math.round(droneList.reduce((s, t) => s + t.battery, 0) / droneList.length)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -432,7 +574,7 @@ export default function RoboticsDashboard() {
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Active Units</p>
           <p className="text-2xl font-bold text-emerald-400 mt-1">{activeCount}</p>
-          <p className="text-[10px] text-slate-600 mt-0.5">of {Object.keys(telemetry).length} total</p>
+          <p className="text-[10px] text-slate-600 mt-0.5">of {droneList.length} total</p>
         </div>
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Emergency</p>
@@ -463,11 +605,18 @@ export default function RoboticsDashboard() {
         <span className="hidden md:inline shrink-0">AES-256-GCM</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.values(telemetry).map(t => (
-          <DroneCard key={t.droneId} telemetry={t} onStatusChange={handleStatusChange} />
-        ))}
-      </div>
+      {droneList.length === 0 ? (
+        <div className="text-center py-16 text-slate-600">
+          <Activity className="w-8 h-8 mx-auto mb-3 opacity-30 animate-pulse" />
+          <p className="text-sm">Loading telemetry...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {droneList.map(t => (
+            <DroneCard key={t.droneId} telemetry={t} onStatusChange={handleStatusChange} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
