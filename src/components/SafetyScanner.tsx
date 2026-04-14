@@ -228,13 +228,21 @@ function ImagePlaceholder({ scanning, file, stream }: { scanning: boolean; file:
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.03)_0%,transparent_70%)]" />
 
       {stream && (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
-        />
+        <>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+          />
+          <div className="absolute inset-0 pointer-events-none z-[5]" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(234,179,8,0.18) 0%, rgba(161,98,7,0.32) 55%, rgba(0,0,0,0.55) 100%)', mixBlendMode: 'multiply' }} />
+          <div className="absolute inset-0 pointer-events-none z-[6]" style={{ background: 'radial-gradient(ellipse 35% 28% at 50% 50%, transparent 0%, transparent 60%, rgba(234,179,8,0.55) 62%, rgba(180,83,9,0.7) 75%, transparent 100%)' }} />
+          <div className="absolute inset-0 pointer-events-none z-[7] flex items-center justify-center">
+            <div style={{ width: '22%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 40%, transparent 70%)', boxShadow: '0 0 24px 4px rgba(234,179,8,0.35), 0 0 0 2px rgba(234,179,8,0.25)' }} />
+          </div>
+          <div className="absolute inset-0 pointer-events-none z-[8]" style={{ background: 'linear-gradient(180deg, rgba(234,179,8,0.04) 0%, transparent 40%, rgba(161,98,7,0.08) 100%)' }} />
+        </>
       )}
 
       {stream && (
