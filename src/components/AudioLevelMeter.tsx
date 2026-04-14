@@ -1,4 +1,27 @@
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
+
+function StudioMic({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="2" width="8" height="11" rx="4" fill="currentColor" opacity="0.9" />
+      <line x1="12" y1="13" x2="12" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M7 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M5 10c0 3.866 3.134 7 7 7s7-3.134 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
+function StudioMicOff({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="2" width="8" height="11" rx="4" fill="currentColor" opacity="0.5" />
+      <line x1="12" y1="13" x2="12" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+      <path d="M7 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+      <path d="M5 10c0 3.866 3.134 7 7 7s7-3.134 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.5" />
+      <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 interface AudioLevelMeterProps {
   active: boolean;
@@ -32,7 +55,7 @@ export default function AudioLevelMeter({
               : 'bg-slate-700/20 border-slate-700/20 text-slate-500 hover:text-slate-300 hover:border-slate-600/40'
           }`}
         >
-          {active ? <Mic className="w-3.5 h-3.5 shrink-0" /> : <MicOff className="w-3.5 h-3.5 shrink-0" />}
+          {active ? <StudioMic className="w-3.5 h-3.5 shrink-0" /> : <StudioMicOff className="w-3.5 h-3.5 shrink-0" />}
           <span className="flex-1 text-left">{active ? 'Audio Active' : 'Audio Disabled'}</span>
           {active && (
             <div className="flex items-end gap-[2px] h-3.5">
