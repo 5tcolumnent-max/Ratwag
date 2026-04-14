@@ -11,6 +11,10 @@ export function PrintButton() {
     if (!el) return;
 
     setExporting(true);
+
+    const stamp = el.querySelector('.report-stamp') as HTMLElement | null;
+    if (stamp) stamp.style.display = 'flex';
+
     try {
       const canvas = await html2canvas(el, {
         scale: 2,
@@ -40,6 +44,7 @@ export function PrintButton() {
       const date = new Date().toISOString().slice(0, 10);
       pdf.save(`DOE-Genesis-Report-${date}.pdf`);
     } finally {
+      if (stamp) stamp.style.display = '';
       setExporting(false);
     }
   }

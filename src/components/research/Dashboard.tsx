@@ -446,6 +446,12 @@ export default function Dashboard() {
       </header>
 
       <main id="report-container" className="report-container max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8">
+        <div className="report-stamp hidden print:flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
+          <span className="text-xs font-semibold text-slate-300 tracking-widest uppercase">DOE Genesis — Research Command</span>
+          <span className="text-xs text-slate-500 tabular-nums">
+            Generated: {new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+          </span>
+        </div>
         {loading || seeding ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <RefreshCw className="w-6 h-6 text-sky-400 animate-spin" />
