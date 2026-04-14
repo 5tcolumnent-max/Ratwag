@@ -445,7 +445,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="report-container max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8">
+      <main id="report-container" className="report-container max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8">
         {loading || seeding ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <RefreshCw className="w-6 h-6 text-sky-400 animate-spin" />
