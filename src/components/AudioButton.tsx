@@ -46,8 +46,13 @@ export function AudioButton() {
       level={state.level}
       error={state.error}
       heartbeat={heartbeat}
+      isSecureContext={state.isSecureContext}
+      devices={state.devices}
+      selectedDeviceId={state.selectedDeviceId}
       onToggle={handleToggle}
       onMonitorToggle={handleMonitorToggle}
+      onSelectDevice={controls.selectDevice}
+      onRefreshDevices={controls.refreshDevices}
     />
   );
 }
