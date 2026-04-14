@@ -269,21 +269,18 @@ export default function ForensicLayer() {
     });
   }, [session]);
 
-  useEffect(() => {
-    async function enumerateCameras() {
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(d => d.kind === 'videoinput');
-        setAvailableCameras(cameras);
-        if (cameras[0]) setPrimaryDeviceId(cameras[0].deviceId);
-        if (cameras[1]) setSecondaryDeviceId(cameras[1].deviceId);
-      } catch {
-        setCameraError('Camera access denied or unavailable.');
-      }
+  const enumerateCameras = useCallback(async (stream: MediaStream) => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(d => d.kind === 'videoinput');
+      setAvailableCameras(cameras);
+      if (!primaryDeviceId && cameras[0]) setPrimaryDeviceId(cameras[0].deviceId);
+      if (!secondaryDeviceId && cameras[1]) setSecondaryDeviceId(cameras[1].deviceId);
+    } catch {
+      // non-fatal — device list stays empty
     }
-    enumerateCameras();
-  }, []);
+    return stream;
+  }, [primaryDeviceId, secondaryDeviceId]);
 
   const startPrimaryFeed = useCallback(async () => {
     setCameraError(null);
@@ -296,13 +293,14 @@ export default function ForensicLayer() {
         audio: false,
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      await enumerateCameras(stream);
       setPrimaryStream(stream);
       void logToAudit('LIVE_FEED_START', `Primary camera feed activated`);
     } catch {
       setCameraError('Could not access primary camera.');
       void logToAudit('LIVE_FEED_ERROR', 'Primary camera access failed');
     }
-  }, [primaryDeviceId, primaryStream, logToAudit]);
+  }, [primaryDeviceId, primaryStream, enumerateCameras, logToAudit]);
 
   const startSecondaryFeed = useCallback(async () => {
     setCameraError(null);
