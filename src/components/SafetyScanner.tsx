@@ -488,6 +488,7 @@ export default function SafetyScanner() {
 
             <AudioLevelMeter
               active={audioState.active}
+              monitoring={audioState.monitoring}
               level={audioState.level}
               error={audioState.error}
               onToggle={() => {
@@ -495,6 +496,13 @@ export default function SafetyScanner() {
                   audioControls.stop();
                 } else {
                   void audioControls.start();
+                }
+              }}
+              onMonitorToggle={() => {
+                if (audioState.monitoring) {
+                  audioControls.stopMonitor();
+                } else {
+                  audioControls.startMonitor();
                 }
               }}
             />

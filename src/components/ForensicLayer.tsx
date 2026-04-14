@@ -452,6 +452,7 @@ export default function ForensicLayer() {
             </button>
             <AudioLevelMeter
               active={audioState.active}
+              monitoring={audioState.monitoring}
               level={audioState.level}
               error={audioState.error}
               onToggle={() => {
@@ -460,6 +461,15 @@ export default function ForensicLayer() {
                   void logToAudit('MIC_TOGGLE', 'Microphone disabled');
                 } else {
                   void audioControls.start().then(() => logToAudit('MIC_TOGGLE', 'Microphone enabled'));
+                }
+              }}
+              onMonitorToggle={() => {
+                if (audioState.monitoring) {
+                  audioControls.stopMonitor();
+                  void logToAudit('MONITOR_TOGGLE', 'Live audio playback stopped');
+                } else {
+                  audioControls.startMonitor();
+                  void logToAudit('MONITOR_TOGGLE', 'Live audio playback started');
                 }
               }}
             />
