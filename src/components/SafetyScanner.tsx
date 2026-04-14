@@ -14,6 +14,9 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  Camera,
+  Square,
+  Video,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -209,12 +212,37 @@ function ResultCard({ result }: { result: ScanResult }) {
   );
 }
 
-function ImagePlaceholder({ scanning, file }: { scanning: boolean; file: File | null }) {
+function ImagePlaceholder({ scanning, file, stream }: { scanning: boolean; file: File | null; stream: MediaStream | null }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
   return (
     <div className="relative bg-slate-900/60 border border-slate-700/30 rounded-xl overflow-hidden flex flex-col items-center justify-center" style={{ minHeight: '200px' }}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.03)_0%,transparent_70%)]" />
-      {scanning ? (
-        <div className="space-y-3 text-center">
+
+      {stream && (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+        />
+      )}
+
+      {stream && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="text-[10px] font-bold text-red-400 bg-red-900/70 border border-red-700/60 px-1.5 py-0.5 rounded animate-pulse backdrop-blur-sm">● LIVE</span>
+        </div>
+      )}
+
+      {scanning && (
+        <div className="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center space-y-3 z-10">
           <div className="relative w-16 h-16 mx-auto">
             <div className="absolute inset-0 rounded-full border-2 border-sky-500/30 animate-ping" />
             <div className="absolute inset-2 rounded-full border border-sky-600/50 animate-pulse" />
@@ -222,20 +250,24 @@ function ImagePlaceholder({ scanning, file }: { scanning: boolean; file: File | 
           </div>
           <p className="text-xs text-sky-400 font-mono animate-pulse">Analyzing morphology...</p>
           <div className="w-48 h-1 bg-slate-700/50 rounded-full overflow-hidden">
-            <div className="h-full bg-sky-500 rounded-full animate-[scan_2s_ease-in-out_infinite]" style={{ animation: 'scan 2s ease-in-out infinite' }} />
+            <div className="h-full bg-sky-500 rounded-full" style={{ animation: 'scan 2s ease-in-out infinite' }} />
           </div>
         </div>
-      ) : file ? (
+      )}
+
+      {!stream && !scanning && file && (
         <div className="text-center space-y-2">
           <FileImage className="w-10 h-10 text-sky-400 mx-auto" />
           <p className="text-xs text-slate-300 font-medium">{file.name}</p>
           <p className="text-[10px] text-slate-500">{(file.size / 1024).toFixed(0)} KB · Ready for analysis</p>
         </div>
-      ) : (
+      )}
+
+      {!stream && !scanning && !file && (
         <div className="text-center space-y-2">
           <Microscope className="w-10 h-10 text-slate-700 mx-auto" />
           <p className="text-xs text-slate-600">No micro-imagery loaded</p>
-          <p className="text-[10px] text-slate-700">Upload to begin pathogen detection</p>
+          <p className="text-[10px] text-slate-700">Upload or use live camera below</p>
         </div>
       )}
     </div>
@@ -249,7 +281,30 @@ export default function SafetyScanner() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [sampleLabel, setSampleLabel] = useState('');
   const [filterHazard, setFilterHazard] = useState('all');
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (liveStream) liveStream.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      setLiveStream(stream);
+    } catch {
+      setCameraError('Camera access denied or unavailable.');
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (liveStream) liveStream.getTracks().forEach(t => t.stop());
+    setLiveStream(null);
+  }, [liveStream]);
 
   useEffect(() => {
     if (!session) return;
@@ -303,7 +358,7 @@ export default function SafetyScanner() {
   };
 
   const runAnalysis = async () => {
-    if (!uploadedFile && !sampleLabel) return;
+    if (!uploadedFile && !sampleLabel && !liveStream) return;
     setScanStatus('uploading');
     await new Promise(r => setTimeout(r, 600));
     setScanStatus('processing');
@@ -316,7 +371,7 @@ export default function SafetyScanner() {
     const newResult: ScanResult = {
       id: crypto.randomUUID(),
       scanId,
-      imageName: uploadedFile?.name || 'simulated-input.tif',
+      imageName: uploadedFile?.name || (liveStream ? 'live-capture.frame' : 'simulated-input.tif'),
       scannedAt: new Date().toISOString(),
       ...template,
       sampleLabel: label,
@@ -396,7 +451,37 @@ export default function SafetyScanner() {
               <Upload className="w-3 h-3" /> Sample Input
             </p>
 
-            <ImagePlaceholder scanning={scanStatus === 'processing'} file={uploadedFile} />
+            <ImagePlaceholder scanning={scanStatus === 'processing'} file={uploadedFile} stream={liveStream} />
+
+            <div className="flex gap-2">
+              {!liveStream ? (
+                <button
+                  onClick={startCamera}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-700/40 border border-slate-600/40 text-slate-300 text-xs font-medium hover:bg-slate-700/60 hover:text-white transition-all"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Use Live Camera
+                </button>
+              ) : (
+                <button
+                  onClick={stopCamera}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-900/30 border border-red-700/40 text-red-400 text-xs font-medium hover:bg-red-900/50 transition-all"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  Stop Camera
+                </button>
+              )}
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-700/30 border border-slate-600/30 text-slate-400 text-xs font-medium hover:text-slate-200 transition-all"
+                title="Upload image file"
+              >
+                <Video className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {cameraError && (
+              <p className="text-[10px] text-red-400 bg-red-900/20 border border-red-700/20 rounded-lg px-3 py-2">{cameraError}</p>
+            )}
 
             <input
               className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-sky-600/60"
@@ -417,7 +502,7 @@ export default function SafetyScanner() {
 
             <button
               onClick={runAnalysis}
-              disabled={scanStatus === 'processing' || scanStatus === 'uploading' || (!uploadedFile && !sampleLabel)}
+              disabled={scanStatus === 'processing' || scanStatus === 'uploading' || (!uploadedFile && !sampleLabel && !liveStream)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sky-700/50 border border-sky-600/40 text-sky-300 text-xs font-bold hover:bg-sky-700/70 transition-all disabled:opacity-40"
             >
               {scanStatus === 'uploading' || scanStatus === 'processing' ? (
