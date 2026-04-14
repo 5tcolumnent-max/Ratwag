@@ -18,6 +18,7 @@ import {
   Siren,
   ScanLine,
 } from 'lucide-react';
+import { PrintButton } from '../PrintButton';
 import { useAuth } from '../../lib/authContext';
 import {
   fetchMilestones,
@@ -402,6 +403,7 @@ export default function Dashboard() {
               <div className="hidden sm:block">
                 <CountdownTimer />
               </div>
+              <PrintButton />
               <button
                 onClick={loadData}
                 className="p-1.5 md:p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-lg transition-all"
