@@ -5,8 +5,6 @@ import {
   Play,
   Square,
   Camera,
-  Mic,
-  MicOff,
   RefreshCw,
   AlertCircle,
   CheckCircle,
@@ -19,6 +17,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
+import { useAudioFeed } from '../hooks/useAudioFeed';
+import AudioLevelMeter from './AudioLevelMeter';
 
 type FeedStatus = 'idle' | 'loading' | 'active' | 'analyzing' | 'complete' | 'error';
 type AnalysisMode = 'vsr' | 'slr' | 'combined';
@@ -237,7 +237,7 @@ export default function ForensicLayer() {
   const { session } = useAuth();
   const [feedStatus, setFeedStatus] = useState<FeedStatus>('idle');
   const [mode, setMode] = useState<AnalysisMode>('combined');
-  const [micActive, setMicActive] = useState(false);
+  const [audioState, audioControls] = useAudioFeed();
   const [vsrResults, setVsrResults] = useState<AnalysisResult[]>([]);
   const [slrDetections, setSlrDetections] = useState<SignDetection[]>([]);
   const [activePanel, setActivePanel] = useState<'vsr' | 'slr'>('vsr');
@@ -450,15 +450,19 @@ export default function ForensicLayer() {
               <Square className="w-3.5 h-3.5" />
               Stop Analysis
             </button>
-            <button
-              onClick={() => { setMicActive(m => !m); void logToAudit('MIC_TOGGLE', micActive ? 'Microphone disabled' : 'Microphone enabled'); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                micActive ? 'bg-emerald-900/30 border-emerald-700/40 text-emerald-400' : 'bg-slate-700/20 border-slate-700/20 text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {micActive ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-              {micActive ? 'Audio Active' : 'Audio Disabled'}
-            </button>
+            <AudioLevelMeter
+              active={audioState.active}
+              level={audioState.level}
+              error={audioState.error}
+              onToggle={() => {
+                if (audioState.active) {
+                  audioControls.stop();
+                  void logToAudit('MIC_TOGGLE', 'Microphone disabled');
+                } else {
+                  void audioControls.start().then(() => logToAudit('MIC_TOGGLE', 'Microphone enabled'));
+                }
+              }}
+            />
             {cameraError && (
               <div className="flex items-start gap-2 bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2">
                 <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />

@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
+import { useAudioFeed } from '../hooks/useAudioFeed';
+import AudioLevelMeter from './AudioLevelMeter';
 
 type HazardLevel = 'low' | 'medium' | 'high' | 'critical';
 type ScanStatus = 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
@@ -283,6 +285,7 @@ export default function SafetyScanner() {
   const [filterHazard, setFilterHazard] = useState('all');
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [audioState, audioControls] = useAudioFeed();
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -482,6 +485,19 @@ export default function SafetyScanner() {
             {cameraError && (
               <p className="text-[10px] text-red-400 bg-red-900/20 border border-red-700/20 rounded-lg px-3 py-2">{cameraError}</p>
             )}
+
+            <AudioLevelMeter
+              active={audioState.active}
+              level={audioState.level}
+              error={audioState.error}
+              onToggle={() => {
+                if (audioState.active) {
+                  audioControls.stop();
+                } else {
+                  void audioControls.start();
+                }
+              }}
+            />
 
             <input
               className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-sky-600/60"
