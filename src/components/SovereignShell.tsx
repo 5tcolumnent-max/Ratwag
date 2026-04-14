@@ -32,6 +32,7 @@ import RoboticsDashboard from './RoboticsDashboard';
 import SafetyScanner from './SafetyScanner';
 import AuditLog from './AuditLog';
 import ConfigPanel from './config/ConfigPanel';
+import { AudioErrorBoundary } from './AudioErrorBoundary';
 
 type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
 
@@ -691,9 +692,9 @@ export default function SovereignShell() {
               <Dashboard />
             </div>
           )}
-          {activeSection === 'forensic_ai' && <ForensicLayer />}
+          {activeSection === 'forensic_ai' && <AudioErrorBoundary><ForensicLayer /></AudioErrorBoundary>}
           {activeSection === 'robotics' && <RoboticsDashboard />}
-          {activeSection === 'safety_scanner' && <SafetyScanner />}
+          {activeSection === 'safety_scanner' && <AudioErrorBoundary><SafetyScanner /></AudioErrorBoundary>}
           {activeSection === 'audit_log' && <AuditLog />}
           {activeSection === 'config' && <ConfigPanel />}
         </main>

@@ -30,6 +30,7 @@ import { fetchLatestReadings, aggregateRiskProfile } from '../../telemetry/Infra
 import { supabase } from '../../lib/supabase';
 import type { GrantMilestone, ComplianceDocument, BudgetItem, InfrastructureReading } from '../../lib/database.types';
 import { AudioButton } from '../AudioButton';
+import { AudioErrorBoundary } from '../AudioErrorBoundary';
 import CountdownTimer from './CountdownTimer';
 import MilestoneTracker from './MilestoneTracker';
 import BudgetModule from './BudgetModule';
@@ -394,7 +395,9 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
               <div className="hidden md:block">
-                <AudioButton />
+                <AudioErrorBoundary>
+                  <AudioButton />
+                </AudioErrorBoundary>
               </div>
               <div className="hidden sm:block">
                 <CountdownTimer />
