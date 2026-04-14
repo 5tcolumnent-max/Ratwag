@@ -1,4 +1,5 @@
 import { Volume2, VolumeX } from 'lucide-react';
+import { type FeedHeartbeat, formatLastSeen, statusColor as hbStatusColor } from '../hooks/useFeedHeartbeat';
 
 function StudioMic({ className = 'w-3.5 h-3.5' }: { className?: string }) {
   return (
@@ -28,6 +29,7 @@ interface AudioLevelMeterProps {
   monitoring: boolean;
   level: number;
   error: string | null;
+  heartbeat?: FeedHeartbeat;
   onToggle: () => void;
   onMonitorToggle: () => void;
   className?: string;
@@ -38,11 +40,13 @@ export default function AudioLevelMeter({
   monitoring,
   level,
   error,
+  heartbeat,
   onToggle,
   onMonitorToggle,
   className = '',
 }: AudioLevelMeterProps) {
   const bars = 12;
+  const hbColors = heartbeat ? hbStatusColor(heartbeat.status) : null;
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
@@ -98,6 +102,20 @@ export default function AudioLevelMeter({
           </button>
         )}
       </div>
+
+      {heartbeat && hbColors && (
+        <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-[10px] font-mono ${hbColors.badge}`}>
+          <div className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hbColors.dot} ${heartbeat.status === 'online' ? 'animate-pulse' : heartbeat.status === 'reconnecting' ? 'animate-ping' : ''}`} />
+            <span className={`font-semibold uppercase tracking-wide ${hbColors.text}`}>
+              {heartbeat.status === 'reconnecting' ? `Reconnecting… (${heartbeat.reconnectAttempts})` : heartbeat.status}
+            </span>
+          </div>
+          <span className="opacity-80">
+            Last seen: <span className="font-semibold">{formatLastSeen(heartbeat.lastSeenAt)}</span>
+          </span>
+        </div>
+      )}
 
       {error && (
         <p className="text-[10px] text-red-400 bg-red-900/20 border border-red-700/20 rounded-lg px-3 py-1.5">{error}</p>

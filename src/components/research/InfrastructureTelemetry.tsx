@@ -9,6 +9,8 @@ import {
   type RiskLevel,
 } from '../../telemetry/InfrastructureMonitor';
 import { useAuth } from '../../lib/authContext';
+import { useFeedHeartbeat, formatLastSeen, statusColor as hbStatusColor } from '../../hooks/useFeedHeartbeat';
+import { SignalStrengthBar } from '../FeedHeartbeatBadge';
 
 interface Props {
   readings: InfrastructureReading[];
@@ -30,10 +32,31 @@ function RiskBadge({ level }: { level: RiskLevel }) {
   );
 }
 
-function SensorCard({ profile, reading, risk_level }: ReturnType<typeof buildLatestSensorStates>[number]) {
+function SensorCard({ profile, reading, risk_level, userId, onReconnect }: ReturnType<typeof buildLatestSensorStates>[number] & {
+  userId: string | null;
+  onReconnect: () => void;
+}) {
   const classes = getRiskLevelClasses(risk_level);
   const Icon = TYPE_ICONS[profile.sensor_type] || Activity;
   const hasData = reading !== null;
+
+  const sensorSignal = hasData
+    ? Math.max(0, Math.min(100, 100 - (risk_level === 'critical' ? 80 : risk_level === 'high' ? 55 : risk_level === 'medium' ? 30 : 0)))
+    : 0;
+
+  const heartbeat = useFeedHeartbeat({
+    feedId: profile.sensor_id,
+    feedType: 'sensor',
+    feedLabel: `${profile.sensor_id} — ${profile.location}`,
+    userId,
+    isOnline: hasData,
+    signalStrength: sensorSignal,
+    offlineThresholdMs: 30000,
+    degradedThresholdMs: 15000,
+    onReconnect,
+  });
+
+  const hbColors = hbStatusColor(heartbeat.status);
 
   const gaugeWidth = hasData && reading
     ? Math.min(
@@ -96,11 +119,20 @@ function SensorCard({ profile, reading, risk_level }: ReturnType<typeof buildLat
         </div>
       </div>
 
-      {reading && (
-        <p className="text-[9px] text-slate-600 mt-1">
-          Last: {new Date(reading.recorded_at).toLocaleTimeString()}
-        </p>
-      )}
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/20">
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hbColors.dot} ${heartbeat.status === 'online' ? 'animate-pulse' : heartbeat.status === 'reconnecting' ? 'animate-ping' : ''}`} />
+          <span className={`text-[9px] font-semibold uppercase tracking-wide ${hbColors.text}`}>
+            {heartbeat.status === 'reconnecting' ? 'Reconnecting…' : heartbeat.status}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <SignalStrengthBar value={sensorSignal} />
+          <span className="text-[9px] font-mono text-slate-600">
+            {formatLastSeen(heartbeat.lastSeenAt)}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -194,7 +226,12 @@ export default function InfrastructureTelemetry({ readings, onRefresh }: Props) 
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {sensorStates.map(state => (
-            <SensorCard key={state.profile.sensor_id} {...state} />
+            <SensorCard
+              key={state.profile.sensor_id}
+              {...state}
+              userId={session?.user.id ?? null}
+              onReconnect={handleScan}
+            />
           ))}
         </div>
       </div>

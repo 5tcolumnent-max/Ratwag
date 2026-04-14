@@ -1,8 +1,27 @@
 import { useAudioFeed } from '../hooks/useAudioFeed';
+import { useFeedHeartbeat } from '../hooks/useFeedHeartbeat';
+import { useAuth } from '../lib/authContext';
 import AudioLevelMeter from './AudioLevelMeter';
 
 export function AudioButton() {
+  const { session } = useAuth();
   const [state, controls] = useAudioFeed();
+
+  const audioSignal = state.active
+    ? Math.max(10, Math.min(100, 40 + state.level * 0.6))
+    : 0;
+
+  const heartbeat = useFeedHeartbeat({
+    feedId: 'audio-mic',
+    feedType: 'audio',
+    feedLabel: 'Microphone Feed',
+    userId: session?.user.id ?? null,
+    isOnline: state.active,
+    signalStrength: audioSignal,
+    offlineThresholdMs: 20000,
+    degradedThresholdMs: 10000,
+    onReconnect: controls.start,
+  });
 
   const handleToggle = async () => {
     if (state.active) {
@@ -26,6 +45,7 @@ export function AudioButton() {
       monitoring={state.monitoring}
       level={state.level}
       error={state.error}
+      heartbeat={heartbeat}
       onToggle={handleToggle}
       onMonitorToggle={handleMonitorToggle}
     />

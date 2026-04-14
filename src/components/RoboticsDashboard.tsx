@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
+import { useFeedHeartbeat, formatLastSeen, statusColor as hbStatusColor } from '../hooks/useFeedHeartbeat';
+import { SignalStrengthBar } from './FeedHeartbeatBadge';
 
 type DroneType = 'aerial' | 'aquatic';
 type DroneStatus = 'standby' | 'active' | 'returning' | 'emergency' | 'offline';
@@ -261,11 +263,28 @@ function SonarDisplay({ depthM, maxDepthM }: { depthM: number; maxDepthM: number
   );
 }
 
-function DroneCard({ telemetry, onStatusChange }: {
+function DroneCard({ telemetry, userId, onStatusChange, onReconnect }: {
   telemetry: DroneTelemetry;
+  userId: string | null;
   onStatusChange: (id: string, status: DroneStatus) => void;
+  onReconnect: (droneId: string) => Promise<void>;
 }) {
   const isAerial = telemetry.droneType === 'aerial';
+  const isOnline = telemetry.status !== 'offline';
+
+  const heartbeat = useFeedHeartbeat({
+    feedId: telemetry.droneId,
+    feedType: 'drone',
+    feedLabel: `${telemetry.droneId} (${telemetry.droneType})`,
+    userId,
+    isOnline,
+    signalStrength: telemetry.signal,
+    offlineThresholdMs: 12000,
+    degradedThresholdMs: 6000,
+    onReconnect: () => onReconnect(telemetry.droneId),
+  });
+
+  const hbColors = hbStatusColor(heartbeat.status);
 
   return (
     <div className={`bg-slate-800/20 border rounded-xl overflow-hidden transition-all ${
@@ -286,6 +305,21 @@ function DroneCard({ telemetry, onStatusChange }: {
           )}
           <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${statusColor(telemetry.status)}`}>
             {telemetry.status}
+          </span>
+        </div>
+      </div>
+
+      <div className={`flex items-center justify-between px-4 py-2 border-b border-slate-700/10 ${heartbeat.status === 'offline' ? 'bg-slate-900/40' : heartbeat.status === 'reconnecting' ? 'bg-sky-900/10' : ''}`}>
+        <div className="flex items-center gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hbColors.dot} ${heartbeat.status === 'online' ? 'animate-pulse' : heartbeat.status === 'reconnecting' ? 'animate-ping' : ''}`} />
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${hbColors.text}`}>
+            {heartbeat.status === 'reconnecting' ? `Reconnecting… (attempt ${heartbeat.reconnectAttempts})` : heartbeat.status}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <SignalStrengthBar value={telemetry.signal} />
+          <span className="text-[10px] font-mono text-slate-500">
+            Last seen: <span className={`font-semibold ${hbColors.text}`}>{formatLastSeen(heartbeat.lastSeenAt)}</span>
           </span>
         </div>
       </div>
@@ -535,6 +569,30 @@ export default function RoboticsDashboard() {
     return () => { if (persistRef.current) clearInterval(persistRef.current); };
   }, [session, loaded, telemetry]);
 
+  const handleReconnect = useCallback(async (droneId: string) => {
+    setTelemetry(prev => ({
+      ...prev,
+      [droneId]: { ...prev[droneId], status: 'standby' },
+    }));
+
+    if (session) {
+      const drone = telemetry[droneId];
+      if (drone?.dbId) {
+        await supabase
+          .from('robotics_telemetry')
+          .update({ status: 'standby' })
+          .eq('id', drone.dbId);
+      }
+      await supabase.from('audit_log_entries').insert({
+        user_id: session.user.id,
+        module: 'RoboticsDashboard',
+        action: 'DRONE_AUTO_RECONNECT',
+        detail: `${droneId} — auto-reconnect triggered`,
+        severity: 'info',
+      });
+    }
+  }, [session, telemetry]);
+
   const handleStatusChange = useCallback(async (droneId: string, status: DroneStatus) => {
     setTelemetry(prev => ({
       ...prev,
@@ -613,7 +671,13 @@ export default function RoboticsDashboard() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {droneList.map(t => (
-            <DroneCard key={t.droneId} telemetry={t} onStatusChange={handleStatusChange} />
+            <DroneCard
+              key={t.droneId}
+              telemetry={t}
+              userId={session?.user.id ?? null}
+              onStatusChange={handleStatusChange}
+              onReconnect={handleReconnect}
+            />
           ))}
         </div>
       )}
