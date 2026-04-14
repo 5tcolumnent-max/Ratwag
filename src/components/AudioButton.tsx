@@ -1,24 +1,33 @@
-import { Volume2 } from 'lucide-react';
+import { useAudioFeed } from '../hooks/useAudioFeed';
+import AudioLevelMeter from './AudioLevelMeter';
 
-export function AudioButton({ onClick }: { onClick: () => void }) {
+export function AudioButton() {
+  const [state, controls] = useAudioFeed();
+
+  const handleToggle = async () => {
+    if (state.active) {
+      controls.stop();
+    } else {
+      await controls.start();
+    }
+  };
+
+  const handleMonitorToggle = () => {
+    if (state.monitoring) {
+      controls.stopMonitor();
+    } else {
+      controls.startMonitor();
+    }
+  };
+
   return (
-    <button
-      onClick={onClick}
-      style={{
-        backgroundColor: '#FFD700',
-        color: '#000',
-        padding: '10px 20px',
-        borderRadius: '8px',
-        border: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        cursor: 'pointer',
-        fontWeight: 'bold'
-      }}
-    >
-      <Volume2 size={20} />
-      <span>Audio Output</span>
-    </button>
+    <AudioLevelMeter
+      active={state.active}
+      monitoring={state.monitoring}
+      level={state.level}
+      error={state.error}
+      onToggle={handleToggle}
+      onMonitorToggle={handleMonitorToggle}
+    />
   );
 }

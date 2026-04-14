@@ -29,6 +29,7 @@ import { buildDOEVarianceReport } from '../../compliance/FederalCostAccounting';
 import { fetchLatestReadings, aggregateRiskProfile } from '../../telemetry/InfrastructureMonitor';
 import { supabase } from '../../lib/supabase';
 import type { GrantMilestone, ComplianceDocument, BudgetItem, InfrastructureReading } from '../../lib/database.types';
+import { AudioButton } from '../AudioButton';
 import CountdownTimer from './CountdownTimer';
 import MilestoneTracker from './MilestoneTracker';
 import BudgetModule from './BudgetModule';
@@ -392,6 +393,9 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+              <div className="hidden md:block">
+                <AudioButton />
+              </div>
               <div className="hidden sm:block">
                 <CountdownTimer />
               </div>
