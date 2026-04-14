@@ -394,7 +394,7 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+            <div className="no-print flex items-center gap-1.5 md:gap-3 shrink-0">
               <div className="hidden md:block">
                 <AudioErrorBoundary>
                   <AudioButton />
@@ -421,7 +421,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-3 md:mt-4 -mb-px overflow-x-auto scrollbar-none">
+          <div className="no-print mt-3 md:mt-4 -mb-px overflow-x-auto scrollbar-none">
             <nav className="flex gap-0.5 md:gap-1 min-w-max">
               {TABS.map(tab => {
                 const Icon = tab.icon;
@@ -445,7 +445,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8">
+      <main className="report-container max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8">
         {loading || seeding ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <RefreshCw className="w-6 h-6 text-sky-400 animate-spin" />
