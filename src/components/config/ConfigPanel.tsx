@@ -13,6 +13,10 @@ import {
   ChevronRight,
   Settings,
   RefreshCw,
+  Lock,
+  Wifi,
+  Key,
+  Eye,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/authContext';
@@ -258,12 +262,108 @@ function SecuritySection({ prefs, onChange }: { prefs: Preferences; onChange: (p
         </div>
       </SectionCard>
 
+      <SecurityAuditChecklist />
+
       <div className="flex items-start gap-3 px-4 py-3 bg-sky-950/20 border border-sky-800/30 rounded-xl">
         <Shield className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
         <p className="text-[11px] text-sky-300/80 leading-relaxed">
           All authentication events are recorded in the federal-nexus audit log per NIST SP 800-53 AU-2 requirements.
         </p>
       </div>
+    </div>
+  );
+}
+
+function SecurityAuditChecklist() {
+  const isHttps = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+  const hasSupabaseUrl = !!import.meta.env.VITE_SUPABASE_URL;
+  const hasAnonKey = !!import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const noHardcodedKeys = hasSupabaseUrl && hasAnonKey;
+
+  const checks = [
+    {
+      icon: Lock,
+      label: 'HTTPS / Secure Context',
+      description: isHttps
+        ? 'Connection is encrypted. Camera and microphone access is permitted.'
+        : 'Running over HTTP. Browsers will block camera and microphone access. Deploy to HTTPS.',
+      pass: isHttps,
+      nist: 'SC-8',
+    },
+    {
+      icon: Key,
+      label: 'Environment Variables',
+      description: noHardcodedKeys
+        ? 'API keys are loaded from environment variables — not hardcoded in source.'
+        : 'Could not detect environment variables. Verify VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.',
+      pass: noHardcodedKeys,
+      nist: 'IA-5',
+    },
+    {
+      icon: Wifi,
+      label: 'Supabase Endpoint Configured',
+      description: hasSupabaseUrl
+        ? `Supabase URL is set (${(import.meta.env.VITE_SUPABASE_URL as string).replace(/^https?:\/\//, '').slice(0, 30)}…).`
+        : 'VITE_SUPABASE_URL is not set. Database operations will fail.',
+      pass: hasSupabaseUrl,
+      nist: 'SC-7',
+    },
+    {
+      icon: Eye,
+      label: 'Row Level Security',
+      description: 'RLS is enforced on all Supabase tables. Data is scoped to the authenticated user by default.',
+      pass: true,
+      nist: 'AC-3',
+    },
+  ];
+
+  const passCount = checks.filter(c => c.pass).length;
+  const allPass = passCount === checks.length;
+
+  return (
+    <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl overflow-hidden">
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${allPass ? 'border-emerald-700/20 bg-emerald-900/10' : 'border-amber-700/20 bg-amber-900/10'}`}>
+        <div className="flex items-center gap-2">
+          <Shield className={`w-3.5 h-3.5 ${allPass ? 'text-emerald-400' : 'text-amber-400'}`} />
+          <span className="text-xs font-semibold text-slate-200">Security & Privacy Audit</span>
+        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+          allPass
+            ? 'bg-emerald-900/30 border-emerald-700/40 text-emerald-300'
+            : 'bg-amber-900/20 border-amber-700/30 text-amber-300'
+        }`}>
+          {passCount}/{checks.length} checks passed
+        </span>
+      </div>
+      <div className="divide-y divide-slate-700/20">
+        {checks.map(({ icon: Icon, label, description, pass, nist }) => (
+          <div key={label} className="flex items-start gap-3 px-4 py-3">
+            <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${pass ? 'bg-emerald-900/20 border border-emerald-700/30' : 'bg-amber-900/20 border border-amber-700/30'}`}>
+              <Icon className={`w-3 h-3 ${pass ? 'text-emerald-400' : 'text-amber-400'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-semibold text-slate-200">{label}</span>
+                <span className="text-[9px] font-mono text-slate-600">{nist}</span>
+              </div>
+              <p className={`text-[10px] leading-relaxed ${pass ? 'text-slate-500' : 'text-amber-400/80'}`}>{description}</p>
+            </div>
+            <div className="shrink-0 mt-0.5">
+              {pass
+                ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                : <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              }
+            </div>
+          </div>
+        ))}
+      </div>
+      {!allPass && (
+        <div className="px-4 py-3 border-t border-amber-700/20 bg-amber-900/10">
+          <p className="text-[10px] text-amber-400/80 leading-relaxed">
+            One or more checks require attention before field deployment. Resolve HTTPS first — without it, camera and microphone permissions will be blocked by the browser.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

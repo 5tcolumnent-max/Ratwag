@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Shield,
   LayoutDashboard,
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Activity,
   Wifi,
+  WifiOff,
   Lock,
   X,
   FileWarning,
@@ -23,6 +24,11 @@ import {
   Paperclip,
   Trash2,
   Settings,
+  Power,
+  VolumeX,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -125,9 +131,10 @@ const SECTION_HEADERS: Record<SectionId, { title: string; sub: string }> = {
   config: { title: 'Configuration', sub: 'Platform preferences, notification settings, security policies, and data management controls' },
 };
 
-function StatusBar() {
+function StatusBar({ onKillSwitch }: { onKillSwitch: () => void }) {
+  const isHttps = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
   return (
-    <div className="flex items-center gap-4 text-[10px] font-mono text-slate-600">
+    <div className="flex items-center gap-3 text-[10px] font-mono text-slate-600">
       <span className="flex items-center gap-1">
         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
         <span className="text-emerald-400">ONLINE</span>
@@ -144,6 +151,39 @@ function StatusBar() {
         <Activity className="w-3 h-3" />
         NIST-800-53
       </span>
+      {!isHttps && (
+        <span className="flex items-center gap-1 text-amber-500 border border-amber-700/40 bg-amber-900/10 px-1.5 py-0.5 rounded">
+          <AlertTriangle className="w-2.5 h-2.5" />
+          HTTP
+        </span>
+      )}
+      <button
+        onClick={onKillSwitch}
+        title="Emergency Kill Switch — mute all audio and streams"
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg border border-red-800/40 bg-red-900/10 text-red-600 hover:bg-red-900/25 hover:text-red-400 transition-all"
+      >
+        <Power className="w-2.5 h-2.5" />
+        KILL
+      </button>
+    </div>
+  );
+}
+
+function SecurityAuditBadge() {
+  const isHttps = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+  const hasEnvVars = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+  const allGood = isHttps && hasEnvVars;
+
+  return (
+    <div className={`flex items-center gap-1.5 text-[9px] font-mono px-2 py-1 rounded-lg border ${
+      allGood
+        ? 'border-emerald-700/30 bg-emerald-900/10 text-emerald-600'
+        : 'border-amber-700/40 bg-amber-900/10 text-amber-500'
+    }`}>
+      {allGood
+        ? <><CheckCircle className="w-2.5 h-2.5" />SEC OK</>
+        : <><AlertTriangle className="w-2.5 h-2.5" />SEC WARN</>
+      }
     </div>
   );
 }
@@ -497,10 +537,203 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
   );
 }
 
+type ConnectivityStatus = 'online' | 'degraded' | 'offline';
+
+function useConnectivityWatchdog(): { status: ConnectivityStatus; lastOnlineAt: Date | null; retry: () => void } {
+  const [status, setStatus] = useState<ConnectivityStatus>('online');
+  const [lastOnlineAt, setLastOnlineAt] = useState<Date | null>(new Date());
+
+  const check = useCallback(() => {
+    if (navigator.onLine) {
+      setStatus('online');
+      setLastOnlineAt(new Date());
+    } else {
+      setStatus('offline');
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('online', check);
+    window.addEventListener('offline', check);
+
+    const id = setInterval(() => {
+      if (navigator.onLine) {
+        setLastOnlineAt(prev => {
+          const age = prev ? Date.now() - prev.getTime() : Infinity;
+          if (age > 20000) {
+            setStatus('degraded');
+          } else {
+            setStatus('online');
+          }
+          return prev;
+        });
+      } else {
+        setStatus('offline');
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('online', check);
+      window.removeEventListener('offline', check);
+      clearInterval(id);
+    };
+  }, [check]);
+
+  return { status, lastOnlineAt, retry: check };
+}
+
+function ConnectivityBanner({ status, lastOnlineAt, onRetry }: { status: ConnectivityStatus; lastOnlineAt: Date | null; onRetry: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [blink, setBlink] = useState(true);
+
+  useEffect(() => {
+    if (status !== 'online') setDismissed(false);
+  }, [status]);
+
+  useEffect(() => {
+    if (status === 'offline') {
+      const id = setInterval(() => setBlink(b => !b), 700);
+      return () => clearInterval(id);
+    }
+  }, [status]);
+
+  if (status === 'online' || dismissed) return null;
+
+  return (
+    <div className={`sticky top-0 z-[100] flex items-center gap-3 px-4 py-2 text-xs font-medium transition-all ${
+      status === 'offline'
+        ? `border-b border-red-700/60 bg-red-950/90 text-red-300 ${blink ? 'opacity-100' : 'opacity-80'}`
+        : 'border-b border-amber-700/50 bg-amber-950/80 text-amber-300'
+    }`} style={{ backdropFilter: 'blur(8px)' }}>
+      {status === 'offline'
+        ? <WifiOff className="w-3.5 h-3.5 shrink-0 text-red-400" />
+        : <Wifi className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+      }
+      <div className="flex-1 min-w-0">
+        {status === 'offline'
+          ? <span><span className="font-bold text-red-400">CONNECTION LOST</span> — Sensor data feed interrupted. Attempting reconnect. Last online: {lastOnlineAt ? lastOnlineAt.toLocaleTimeString() : 'unknown'}</span>
+          : <span><span className="font-bold text-amber-400">SIGNAL DEGRADED</span> — Connection quality reduced. Live feeds may have increased latency.</span>
+        }
+      </div>
+      <button
+        onClick={onRetry}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg border border-current/30 hover:bg-white/10 transition-all shrink-0 text-[10px]"
+      >
+        <RefreshCw className="w-3 h-3" />
+        Retry
+      </button>
+      {status !== 'offline' && (
+        <button onClick={() => setDismissed(true)} className="text-current/50 hover:text-current transition-colors shrink-0">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function KillSwitchPanel({ onClose }: { onClose: () => void }) {
+  const [audioKilled, setAudioKilled] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const killAllAudio = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    const ctx = (window as unknown as { _audioCtx?: AudioContext })._audioCtx;
+    if (ctx) ctx.suspend();
+    const videos = document.querySelectorAll<HTMLVideoElement>('video');
+    videos.forEach(v => { v.muted = true; v.pause(); });
+    const audios = document.querySelectorAll<HTMLAudioElement>('audio');
+    audios.forEach(a => { a.muted = true; a.pause(); });
+    setAudioKilled(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="relative w-full max-w-md mx-4 bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-800/60">
+          <div className="p-2 rounded-xl bg-red-900/40 border border-red-700/50">
+            <Power className="w-4 h-4 text-red-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">Emergency Kill Switch</p>
+            <p className="text-[10px] text-slate-500 mt-0.5 font-mono">Immediately halt all active streams and audio</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="space-y-2">
+            <button
+              onClick={killAllAudio}
+              disabled={audioKilled}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                audioKilled
+                  ? 'border-emerald-700/40 bg-emerald-900/20 text-emerald-400 cursor-default'
+                  : 'border-red-700/50 bg-red-900/20 text-red-300 hover:bg-red-900/30 active:scale-[0.98]'
+              }`}
+            >
+              {audioKilled
+                ? <CheckCircle className="w-4 h-4 shrink-0" />
+                : <VolumeX className="w-4 h-4 shrink-0" />
+              }
+              {audioKilled ? 'All Audio Halted' : 'Mute All Audio + Speech'}
+            </button>
+
+            <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-3">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">What this does</p>
+              <ul className="space-y-1 text-[10px] text-slate-400">
+                <li className="flex items-center gap-1.5"><div className="w-1 h-1 rounded-full bg-slate-600" />Cancels all Web Speech synthesis (alarms, TTS)</li>
+                <li className="flex items-center gap-1.5"><div className="w-1 h-1 rounded-full bg-slate-600" />Mutes and pauses all video/audio elements</li>
+                <li className="flex items-center gap-1.5"><div className="w-1 h-1 rounded-full bg-slate-600" />Suspends AudioContext if active</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-amber-900/10 border border-amber-700/30 rounded-xl p-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-amber-400 leading-relaxed">
+                To fully stop a microphone or camera feed, navigate to that module and deactivate it directly. This switch handles OS-level audio output and TTS only.
+              </p>
+            </div>
+          </div>
+
+          {!confirmed ? (
+            <button
+              onClick={() => setConfirmed(true)}
+              className="w-full px-4 py-2.5 rounded-xl border border-red-700/50 bg-red-900/20 text-red-300 text-sm font-bold hover:bg-red-900/30 transition-all"
+            >
+              Reload Page (Full Reset)
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-center text-amber-400 font-semibold">Confirm — this will reload the page and end all sessions</p>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmed(false)} className="flex-1 px-4 py-2 rounded-xl border border-slate-700/40 text-slate-400 text-sm hover:border-slate-600 transition-all">
+                  Cancel
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex-1 px-4 py-2 rounded-xl bg-red-700 border border-red-600 text-white text-sm font-bold hover:bg-red-600 transition-all"
+                >
+                  Reload Now
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SovereignShell() {
   const { session, signOut } = useAuth();
   const [activeSection, setActiveSection] = useState<SectionId>('dashboard');
   const [collapsed, setCollapsed] = useState(false);
+  const [killSwitchOpen, setKillSwitchOpen] = useState(false);
+  const { status: connStatus, lastOnlineAt, retry: retryConn } = useConnectivityWatchdog();
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(() => {
     return new URLSearchParams(window.location.search).get('action') === 'open-411';
   });
@@ -528,7 +761,11 @@ export default function SovereignShell() {
   const header = SECTION_HEADERS[activeSection];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
+      <ConnectivityBanner status={connStatus} lastOnlineAt={lastOnlineAt} onRetry={retryConn} />
+      {killSwitchOpen && <KillSwitchPanel onClose={() => setKillSwitchOpen(false)} />}
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Desktop sidebar */}
       <aside
         className={`hidden md:relative md:flex flex-col bg-slate-900/90 border-r border-slate-800/60 shrink-0 transition-all duration-300 ${
@@ -651,8 +888,9 @@ export default function SovereignShell() {
                   <p className="text-[10px] text-slate-500 mt-0.5 max-w-xl">{header.sub}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <StatusBar />
+              <div className="flex items-center gap-3">
+                <SecurityAuditBadge />
+                <StatusBar onKillSwitch={() => setKillSwitchOpen(true)} />
                 <button
                   onClick={() => setEvidenceModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-700 border border-red-600 text-white text-xs font-bold hover:bg-red-600 active:scale-95 transition-all shadow-lg shadow-red-950/50"
@@ -740,6 +978,7 @@ export default function SovereignShell() {
           onClose={handleCloseModal}
         />
       )}
+      </div>
     </div>
   );
 }

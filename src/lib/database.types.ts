@@ -9,6 +9,54 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      feed_heartbeats: {
+        Row: {
+          id: string
+          user_id: string
+          feed_id: string
+          feed_type: string
+          feed_label: string
+          last_seen_at: string
+          signal_strength: number
+          status: string
+          reconnect_attempts: number
+          last_error: string
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feed_id: string
+          feed_type?: string
+          feed_label?: string
+          last_seen_at?: string
+          signal_strength?: number
+          status?: string
+          reconnect_attempts?: number
+          last_error?: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feed_id?: string
+          feed_type?: string
+          feed_label?: string
+          last_seen_at?: string
+          signal_strength?: number
+          status?: string
+          reconnect_attempts?: number
+          last_error?: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       grant_milestones: {
         Row: {
           id: string

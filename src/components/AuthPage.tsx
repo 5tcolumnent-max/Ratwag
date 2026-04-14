@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Mail, Lock, AlertCircle, Fingerprint, CheckCircle, ArrowLeft, KeyRound, XCircle, Usb, Nfc, Key, Hash } from 'lucide-react';
+import { Shield, Mail, Lock, AlertCircle, Fingerprint, CheckCircle, ArrowLeft, KeyRound, XCircle, Usb, Key, Hash } from 'lucide-react';
 import { useAuth } from '../lib/authContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -70,16 +70,11 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null);
-  const [biometricAvailable, setBiometricAvailable] = useState<boolean | null>(null);
   const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
   const [capabilities, setCapabilities] = useState<BiometricCapabilities | null>(null);
   const [selectedModality, setSelectedModality] = useState<BiometricModality>('platform');
-  const [showModalityPicker, setShowModalityPicker] = useState(false);
-
   useEffect(() => {
-    checkBiometricSupport().then(({ available }) => {
-      setBiometricAvailable(available);
-    });
+    checkBiometricSupport();
 
     detectBiometricCapabilities().then((caps) => {
       setCapabilities(caps);
@@ -236,7 +231,6 @@ export function AuthPage() {
       return;
     }
     setBiometricLoading(true);
-    setShowModalityPicker(false);
     try {
       const userId = btoa(email);
       const hasCredential = hasSavedCredential(userId);
