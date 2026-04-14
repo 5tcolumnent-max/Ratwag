@@ -17,6 +17,7 @@ import {
   Crosshair,
   Siren,
   ScanLine,
+  Flame,
 } from 'lucide-react';
 import { PrintButton } from '../PrintButton';
 import { useAuth } from '../../lib/authContext';
@@ -44,8 +45,9 @@ import ForensicLayer from './ForensicLayer';
 import ThreatIntelligence from './ThreatIntelligence';
 import IncidentResponse from './IncidentResponse';
 import VulnerabilityScanner from './VulnerabilityScanner';
+import EnvironmentalHazardMonitor from './EnvironmentalHazardMonitor';
 
-type TabId = 'overview' | 'milestones' | 'budget' | 'cost_accounting' | 'documents' | 'telemetry' | 'nist_profile' | 'access_control' | 'forensics' | 'threat_intel' | 'incidents' | 'vulnerabilities';
+type TabId = 'overview' | 'milestones' | 'budget' | 'cost_accounting' | 'documents' | 'telemetry' | 'nist_profile' | 'access_control' | 'forensics' | 'threat_intel' | 'incidents' | 'vulnerabilities' | 'env_hazards';
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -60,6 +62,7 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'threat_intel', label: 'Threat Intel', icon: Crosshair },
   { id: 'incidents', label: 'Incidents', icon: Siren },
   { id: 'vulnerabilities', label: 'Vulnerabilities', icon: ScanLine },
+  { id: 'env_hazards', label: 'Env. Hazards', icon: Flame },
 ];
 
 function StatCard({
@@ -589,6 +592,17 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <VulnerabilityScanner />
+              </div>
+            )}
+            {activeTab === 'env_hazards' && (
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-lg font-bold text-white">Environmental Hazard Monitor</h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Smoke (MQ-2), heat (DS18B20), and flame (IR) sensor alert system — NIST PE-13 / PE-14
+                  </p>
+                </div>
+                <EnvironmentalHazardMonitor />
               </div>
             )}
           </>
