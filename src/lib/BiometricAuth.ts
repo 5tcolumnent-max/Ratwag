@@ -12,6 +12,19 @@ export class BiometricAuthError extends Error {
   }
 }
 
+export type BiometricModality =
+  | 'platform'
+  | 'security-key'
+  | 'passkey'
+  | 'pin';
+
+export interface BiometricCapabilities {
+  webAuthnSupported: boolean;
+  platformAvailable: boolean;
+  conditionalMediationAvailable: boolean;
+  modalities: BiometricModality[];
+}
+
 function isWebAuthnSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -25,6 +38,18 @@ async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
   if (!isWebAuthnSupported()) return false;
   try {
     return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
+}
+
+async function isConditionalMediationAvailable(): Promise<boolean> {
+  if (!isWebAuthnSupported()) return false;
+  try {
+    return (
+      typeof (PublicKeyCredential as any).isConditionalMediationAvailable === 'function' &&
+      await (PublicKeyCredential as any).isConditionalMediationAvailable()
+    );
   } catch {
     return false;
   }
@@ -50,11 +75,50 @@ export interface RegisteredCredential {
   publicKey: string;
   userId: string;
   createdAt: string;
+  modality?: BiometricModality;
+}
+
+export async function detectBiometricCapabilities(): Promise<BiometricCapabilities> {
+  if (!isWebAuthnSupported()) {
+    return {
+      webAuthnSupported: false,
+      platformAvailable: false,
+      conditionalMediationAvailable: false,
+      modalities: [],
+    };
+  }
+
+  const [platformAvailable, conditionalMediationAvailable] = await Promise.all([
+    isPlatformAuthenticatorAvailable(),
+    isConditionalMediationAvailable(),
+  ]);
+
+  const modalities: BiometricModality[] = [];
+
+  if (platformAvailable) {
+    modalities.push('platform');
+  }
+
+  modalities.push('security-key');
+
+  if (conditionalMediationAvailable) {
+    modalities.push('passkey');
+  }
+
+  modalities.push('pin');
+
+  return {
+    webAuthnSupported: true,
+    platformAvailable,
+    conditionalMediationAvailable,
+    modalities,
+  };
 }
 
 export async function registerCredential(
   userId: string,
-  displayName: string
+  displayName: string,
+  modality: BiometricModality = 'platform'
 ): Promise<RegisteredCredential> {
   if (!isWebAuthnSupported()) {
     throw new BiometricAuthError(
@@ -63,16 +127,45 @@ export async function registerCredential(
     );
   }
 
-  const available = await isPlatformAuthenticatorAvailable();
-  if (!available) {
-    throw new BiometricAuthError(
-      'NOT_AVAILABLE',
-      'No biometric hardware (fingerprint sensor, Face ID, etc.) was detected on this device. Please ensure your device has a compatible authenticator and try again.'
-    );
+  if (modality === 'platform') {
+    const available = await isPlatformAuthenticatorAvailable();
+    if (!available) {
+      throw new BiometricAuthError(
+        'NOT_AVAILABLE',
+        'No biometric hardware (fingerprint sensor, Face ID, etc.) was detected on this device. Please ensure your device has a compatible authenticator and try again.'
+      );
+    }
   }
 
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const userIdBytes = new TextEncoder().encode(userId);
+
+  const authenticatorSelection: AuthenticatorSelectionCriteria = (() => {
+    switch (modality) {
+      case 'platform':
+        return {
+          authenticatorAttachment: 'platform' as AuthenticatorAttachment,
+          userVerification: 'required' as UserVerificationRequirement,
+          residentKey: 'preferred' as ResidentKeyRequirement,
+        };
+      case 'security-key':
+        return {
+          authenticatorAttachment: 'cross-platform' as AuthenticatorAttachment,
+          userVerification: 'preferred' as UserVerificationRequirement,
+          residentKey: 'discouraged' as ResidentKeyRequirement,
+        };
+      case 'passkey':
+        return {
+          userVerification: 'required' as UserVerificationRequirement,
+          residentKey: 'required' as ResidentKeyRequirement,
+        };
+      case 'pin':
+        return {
+          userVerification: 'required' as UserVerificationRequirement,
+          residentKey: 'preferred' as ResidentKeyRequirement,
+        };
+    }
+  })();
 
   let credential: PublicKeyCredential;
   try {
@@ -91,12 +184,10 @@ export async function registerCredential(
         pubKeyCredParams: [
           { alg: -7, type: 'public-key' },
           { alg: -257, type: 'public-key' },
+          { alg: -37, type: 'public-key' },
+          { alg: -35, type: 'public-key' },
         ],
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform',
-          userVerification: 'required',
-          residentKey: 'preferred',
-        },
+        authenticatorSelection,
         timeout: 60000,
         attestation: 'none',
       },
@@ -109,6 +200,9 @@ export async function registerCredential(
       if (err.name === 'InvalidStateError') {
         throw new BiometricAuthError('INVALID_STATE', 'A credential is already registered for this device.');
       }
+      if (err.name === 'NotSupportedError') {
+        throw new BiometricAuthError('NOT_SUPPORTED', 'This authenticator type is not supported on your device.');
+      }
     }
     throw new BiometricAuthError('UNKNOWN', 'Biometric registration failed. Please try again.');
   }
@@ -120,6 +214,7 @@ export async function registerCredential(
     publicKey: bufferToBase64url(response.getPublicKey() ?? new ArrayBuffer(0)),
     userId,
     createdAt: new Date().toISOString(),
+    modality,
   };
 
   localStorage.setItem(`biometric_credential_${userId}`, JSON.stringify(registered));
@@ -127,19 +222,14 @@ export async function registerCredential(
   return registered;
 }
 
-export async function authenticate(userId: string): Promise<boolean> {
+export async function authenticate(
+  userId: string,
+  modality?: BiometricModality
+): Promise<boolean> {
   if (!isWebAuthnSupported()) {
     throw new BiometricAuthError(
       'NOT_SUPPORTED',
       'WebAuthn is not supported in this browser. Please use a modern browser such as Chrome, Firefox, or Safari.'
-    );
-  }
-
-  const available = await isPlatformAuthenticatorAvailable();
-  if (!available) {
-    throw new BiometricAuthError(
-      'NOT_AVAILABLE',
-      'No biometric hardware was detected on this device. Please ensure your device supports fingerprint or face authentication.'
     );
   }
 
@@ -152,7 +242,28 @@ export async function authenticate(userId: string): Promise<boolean> {
   }
 
   const registered: RegisteredCredential = JSON.parse(stored);
+  const effectiveModality = modality ?? registered.modality ?? 'platform';
+
+  if (effectiveModality === 'platform') {
+    const available = await isPlatformAuthenticatorAvailable();
+    if (!available) {
+      throw new BiometricAuthError(
+        'NOT_AVAILABLE',
+        'No biometric hardware was detected on this device. Please ensure your device supports fingerprint or face authentication.'
+      );
+    }
+  }
+
   const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+  const transports: AuthenticatorTransport[] = (() => {
+    switch (effectiveModality) {
+      case 'platform': return ['internal'];
+      case 'security-key': return ['usb', 'nfc', 'ble'];
+      case 'passkey': return ['internal', 'hybrid'];
+      case 'pin': return ['internal'];
+    }
+  })();
 
   let assertion: PublicKeyCredential;
   try {
@@ -164,10 +275,10 @@ export async function authenticate(userId: string): Promise<boolean> {
           {
             id: base64urlToBuffer(registered.credentialId),
             type: 'public-key',
-            transports: ['internal'],
+            transports,
           },
         ],
-        userVerification: 'required',
+        userVerification: effectiveModality === 'security-key' ? 'preferred' : 'required',
         timeout: 60000,
       },
     })) as PublicKeyCredential;
@@ -207,6 +318,16 @@ export function hasSavedCredential(userId: string): boolean {
   return !!localStorage.getItem(`biometric_credential_${userId}`);
 }
 
+export function getStoredCredential(userId: string): RegisteredCredential | null {
+  const stored = localStorage.getItem(`biometric_credential_${userId}`);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as RegisteredCredential;
+  } catch {
+    return null;
+  }
+}
+
 export const PRIVILEGED_EMAIL = '5tcolumnent@gmail.com';
 
 export function isPrivilegedUser(email: string): boolean {
@@ -239,14 +360,4 @@ export function retrievePrivilegedSession(credentialId: string): string | null {
 
 export function clearPrivilegedSession(): void {
   localStorage.removeItem('kg_priv_rt');
-}
-
-export function getStoredCredential(userId: string): RegisteredCredential | null {
-  const stored = localStorage.getItem(`biometric_credential_${userId}`);
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored) as RegisteredCredential;
-  } catch {
-    return null;
-  }
 }

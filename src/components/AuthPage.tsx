@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Mail, Lock, AlertCircle, Fingerprint, CheckCircle, ArrowLeft, KeyRound, XCircle } from 'lucide-react';
+import { Shield, Mail, Lock, AlertCircle, Fingerprint, CheckCircle, ArrowLeft, KeyRound, XCircle, Usb, Nfc, Key, Hash } from 'lucide-react';
 import { useAuth } from '../lib/authContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -14,9 +14,50 @@ import {
   retrievePrivilegedSession,
   clearPrivilegedSession,
   getStoredCredential,
+  detectBiometricCapabilities,
+  type BiometricModality,
+  type BiometricCapabilities,
 } from '../lib/BiometricAuth';
 
 type AuthView = 'login' | 'signup' | 'forgotPassword' | 'resetPassword';
+
+interface ModalityOption {
+  id: BiometricModality;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  requiresPlatform?: boolean;
+  requiresConditional?: boolean;
+}
+
+const MODALITY_OPTIONS: ModalityOption[] = [
+  {
+    id: 'platform',
+    label: 'Face ID / Fingerprint',
+    description: 'Use your device biometrics',
+    icon: <Fingerprint className="w-5 h-5" />,
+    requiresPlatform: true,
+  },
+  {
+    id: 'passkey',
+    label: 'Passkey',
+    description: 'Synced passkey across devices',
+    icon: <Key className="w-5 h-5" />,
+    requiresConditional: true,
+  },
+  {
+    id: 'security-key',
+    label: 'Security Key',
+    description: 'USB, NFC, or Bluetooth key',
+    icon: <Usb className="w-5 h-5" />,
+  },
+  {
+    id: 'pin',
+    label: 'Device PIN / Pattern',
+    description: 'Your device screen lock',
+    icon: <Hash className="w-5 h-5" />,
+  },
+];
 
 export function AuthPage() {
   const { signIn, signUp, signInWithProvider, resetPassword, updatePassword, signInWithRefreshToken, isPasswordRecovery, recoveryTokenValid, clearPasswordRecovery } = useAuth();
@@ -31,10 +72,20 @@ export function AuthPage() {
   const [oauthLoading, setOauthLoading] = useState<'google' | 'github' | null>(null);
   const [biometricAvailable, setBiometricAvailable] = useState<boolean | null>(null);
   const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
+  const [capabilities, setCapabilities] = useState<BiometricCapabilities | null>(null);
+  const [selectedModality, setSelectedModality] = useState<BiometricModality>('platform');
+  const [showModalityPicker, setShowModalityPicker] = useState(false);
 
   useEffect(() => {
     checkBiometricSupport().then(({ available }) => {
       setBiometricAvailable(available);
+    });
+
+    detectBiometricCapabilities().then((caps) => {
+      setCapabilities(caps);
+      if (caps.modalities.length > 0) {
+        setSelectedModality(caps.modalities[0]);
+      }
     });
 
     if (isPasswordRecovery) {
@@ -116,7 +167,7 @@ export function AuthPage() {
 
           if (!hasCredential) {
             try {
-              const registered = await registerCredential(userId, PRIVILEGED_EMAIL);
+              const registered = await registerCredential(userId, PRIVILEGED_EMAIL, selectedModality);
               if (rt) storePrivilegedSession(rt, registered.credentialId);
             } catch {
               // biometric registration failed, user is still signed in
@@ -178,13 +229,14 @@ export function AuthPage() {
     }
   };
 
-  const handleBiometricLogin = async () => {
+  const handleBiometricLogin = async (modality: BiometricModality) => {
     clearMessages();
     if (!email) {
       setError('Please enter your email address before using biometric login.');
       return;
     }
     setBiometricLoading(true);
+    setShowModalityPicker(false);
     try {
       const userId = btoa(email);
       const hasCredential = hasSavedCredential(userId);
@@ -197,13 +249,13 @@ export function AuthPage() {
             return;
           }
           await signIn(email, password);
-          const registered = await registerCredential(userId, email);
+          const registered = await registerCredential(userId, email, modality);
           const { data } = await supabase.auth.getSession();
           const rt = data.session?.refresh_token;
           if (rt) storePrivilegedSession(rt, registered.credentialId);
-          setSuccess('Face recognition registered. Future visits will sign you in automatically.');
+          setSuccess('Biometric registered. Future visits will sign you in automatically.');
         } else {
-          const verified = await authenticate(userId);
+          const verified = await authenticate(userId, modality);
           if (verified) {
             const credential = getStoredCredential(userId);
             if (credential) {
@@ -229,10 +281,10 @@ export function AuthPage() {
             return;
           }
           await signIn(email, password);
-          await registerCredential(userId, email);
-          setSuccess('Biometric registered. You can use fingerprint login next time.');
+          await registerCredential(userId, email, modality);
+          setSuccess('Biometric registered. You can use this method next time.');
         } else {
-          const verified = await authenticate(userId);
+          const verified = await authenticate(userId, modality);
           if (verified) {
             if (!password) {
               setError('Biometric confirmed. Please enter your password to complete sign-in.');
@@ -264,6 +316,14 @@ export function AuthPage() {
     }
   };
 
+  const isModalityAvailable = (option: ModalityOption): boolean => {
+    if (!capabilities) return false;
+    if (option.requiresPlatform && !capabilities.platformAvailable) return false;
+    if (option.requiresConditional && !capabilities.conditionalMediationAvailable) return false;
+    return capabilities.webAuthnSupported;
+  };
+
+  const availableModalities = MODALITY_OPTIONS.filter(isModalityAvailable);
   const isLogin = view === 'login';
 
   return (
@@ -597,46 +657,88 @@ export function AuthPage() {
                   </button>
                 </form>
 
-                {isLogin && biometricAvailable !== false && (
+                {isLogin && capabilities !== null && (
                   <div className="mt-4">
-                    <div className="relative flex items-center my-4">
-                      <div className="flex-grow border-t border-gray-200" />
-                      <span className="mx-3 text-xs text-gray-400 font-medium uppercase tracking-wider">or</span>
-                      <div className="flex-grow border-t border-gray-200" />
-                    </div>
+                    {capabilities.webAuthnSupported ? (
+                      <>
+                        <div className="relative flex items-center my-4">
+                          <div className="flex-grow border-t border-gray-200" />
+                          <span className="mx-3 text-xs text-gray-400 font-medium uppercase tracking-wider">or use authenticator</span>
+                          <div className="flex-grow border-t border-gray-200" />
+                        </div>
 
-                    <button
-                      type="button"
-                      onClick={handleBiometricLogin}
-                      disabled={biometricLoading || biometricAvailable === null}
-                      className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-700 font-semibold py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-                    >
-                      <Fingerprint
-                        className={`h-5 w-5 transition-colors ${
-                          biometricLoading
-                            ? 'animate-pulse text-blue-500'
-                            : 'text-gray-400 group-hover:text-blue-500'
-                        }`}
-                      />
-                      {biometricLoading
-                        ? 'Verifying...'
-                        : biometricAvailable === null
-                        ? 'Checking biometric support...'
-                        : 'Face / Fingerprint Login'}
-                    </button>
+                        {availableModalities.length > 0 ? (
+                          <>
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                              {MODALITY_OPTIONS.map((option) => {
+                                const available = isModalityAvailable(option);
+                                const isSelected = selectedModality === option.id;
+                                return (
+                                  <button
+                                    key={option.id}
+                                    type="button"
+                                    onClick={() => available && setSelectedModality(option.id)}
+                                    disabled={!available || biometricLoading}
+                                    title={available ? option.description : 'Not available on this device'}
+                                    className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 text-xs font-medium transition-all
+                                      ${isSelected && available
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                        : available
+                                        ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600 cursor-pointer'
+                                        : 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed opacity-50'
+                                      }`}
+                                  >
+                                    <span className={isSelected && available ? 'text-blue-600' : available ? 'text-gray-400' : 'text-gray-300'}>
+                                      {option.icon}
+                                    </span>
+                                    <span className="leading-tight text-center">{option.label}</span>
+                                    {!available && (
+                                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gray-300" />
+                                    )}
+                                    {available && isSelected && (
+                                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
 
-                    {biometricAvailable === true && (
-                      <p className="text-center text-xs text-gray-400 mt-2">
-                        Uses your device's face sensor or fingerprint
+                            <button
+                              type="button"
+                              onClick={() => handleBiometricLogin(selectedModality)}
+                              disabled={biometricLoading || !availableModalities.some(m => m.id === selectedModality)}
+                              className="w-full flex items-center justify-center gap-2.5 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-700 font-semibold py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                            >
+                              {biometricLoading ? (
+                                <div className="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <span className="text-gray-400 group-hover:text-blue-500 transition-colors">
+                                  {MODALITY_OPTIONS.find(m => m.id === selectedModality)?.icon}
+                                </span>
+                              )}
+                              <span>
+                                {biometricLoading
+                                  ? 'Verifying...'
+                                  : `Sign in with ${MODALITY_OPTIONS.find(m => m.id === selectedModality)?.label ?? 'Biometric'}`}
+                              </span>
+                            </button>
+
+                            <p className="text-center text-xs text-gray-400 mt-2">
+                              {MODALITY_OPTIONS.find(m => m.id === selectedModality)?.description}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-center text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            No authenticators available on this device or browser.
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="mt-2 text-center text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        Biometric login requires a modern browser with WebAuthn support.
                       </p>
                     )}
                   </div>
-                )}
-
-                {isLogin && biometricAvailable === false && (
-                  <p className="mt-4 text-center text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    Biometric login is not available on this device or browser.
-                  </p>
                 )}
 
                 <div className="mt-6 pt-6 border-t border-gray-200">
