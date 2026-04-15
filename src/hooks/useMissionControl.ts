@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { HumanAuthorizationLog } from '../lib/database.types';
+import { supabase } from '../services/supabase';
+import type { HumanAuthorizationLog } from '../types/database.types';
 
 export type AuthDecision = 'APPROVE' | 'DENY';
 
