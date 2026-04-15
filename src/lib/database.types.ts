@@ -915,6 +915,39 @@ export interface Database {
         }
         Relationships: []
       }
+      human_authorization_logs: {
+        Row: {
+          id: string
+          user_id: string
+          mission_id: string
+          status: string
+          authorized_by: string
+          command: string
+          timestamp: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          mission_id: string
+          status: string
+          authorized_by: string
+          command?: string
+          timestamp?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          mission_id?: string
+          status?: string
+          authorized_by?: string
+          command?: string
+          timestamp?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       external_feeds: {
         Row: {
           id: string
@@ -978,3 +1011,4 @@ export type Alert = Database['public']['Tables']['alerts']['Row']
 export type AlertThreshold = Database['public']['Tables']['alert_thresholds']['Row']
 export type EvidenceFile = Database['public']['Tables']['evidence_files']['Row']
 export type ExternalFeed = Database['public']['Tables']['external_feeds']['Row']
+export type HumanAuthorizationLog = Database['public']['Tables']['human_authorization_logs']['Row']

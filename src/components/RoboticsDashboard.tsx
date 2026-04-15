@@ -9,11 +9,18 @@ import {
   Target,
   AlertTriangle,
   Wind,
+  ShieldCheck,
+  ShieldX,
+  Lock,
+  CheckCircle2,
+  XCircle,
+  ClipboardList,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
 import { useFeedHeartbeat, formatLastSeen, statusColor as hbStatusColor } from '../hooks/useFeedHeartbeat';
 import { SignalStrengthBar } from './FeedHeartbeatBadge';
+import { useMissionControl } from '../hooks/useMissionControl';
 
 type DroneType = 'aerial' | 'aquatic';
 type DroneStatus = 'standby' | 'active' | 'returning' | 'emergency' | 'offline';
@@ -263,11 +270,12 @@ function SonarDisplay({ depthM, maxDepthM }: { depthM: number; maxDepthM: number
   );
 }
 
-function DroneCard({ telemetry, userId, onStatusChange, onReconnect }: {
+function DroneCard({ telemetry, userId, onStatusChange, onReconnect, onExecuteMission }: {
   telemetry: DroneTelemetry;
   userId: string | null;
   onStatusChange: (id: string, status: DroneStatus) => void;
   onReconnect: (droneId: string) => Promise<void>;
+  onExecuteMission: (missionId: string) => void;
 }) {
   const isAerial = telemetry.droneType === 'aerial';
   const isOnline = telemetry.status !== 'offline';
@@ -426,6 +434,15 @@ function DroneCard({ telemetry, userId, onStatusChange, onReconnect }: {
             </button>
           ))}
         </div>
+
+        <button
+          onClick={() => onExecuteMission(telemetry.missionId)}
+          disabled={telemetry.status === 'offline' || telemetry.status === 'emergency'}
+          className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-sky-700/40 bg-sky-900/20 text-sky-400 text-[11px] font-semibold hover:bg-sky-900/40 hover:border-sky-600/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <Lock className="w-3 h-3" />
+          Authorize &amp; Execute Mission
+        </button>
       </div>
     </div>
   );
@@ -438,6 +455,12 @@ export default function RoboticsDashboard() {
   const [loaded, setLoaded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const persistRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showAuthLog, setShowAuthLog] = useState(false);
+
+  const missionControl = useMissionControl(
+    session?.user.id ?? null,
+    session?.user.email ?? 'Operator'
+  );
 
   useEffect(() => {
     if (!session) return;
@@ -677,8 +700,142 @@ export default function RoboticsDashboard() {
               userId={session?.user.id ?? null}
               onStatusChange={handleStatusChange}
               onReconnect={handleReconnect}
+              onExecuteMission={missionControl.requestAuthorization}
             />
           ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-2">
+        <button
+          onClick={() => {
+            setShowAuthLog(v => !v);
+            if (!showAuthLog) missionControl.loadRecentLogs();
+          }}
+          className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors border border-slate-700/30 hover:border-slate-600/40 px-3 py-1.5 rounded-lg"
+        >
+          <ClipboardList className="w-3.5 h-3.5" />
+          {showAuthLog ? 'Hide' : 'Show'} Authorization Log
+        </button>
+      </div>
+
+      {showAuthLog && (
+        <div className="bg-slate-900/40 border border-slate-700/30 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-700/20 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-sky-400" />
+            <span className="text-xs font-semibold text-slate-300 tracking-wide">Human Authorization Log</span>
+          </div>
+          {missionControl.recentLogs.length === 0 ? (
+            <p className="text-[11px] text-slate-600 text-center py-6">No authorization records found.</p>
+          ) : (
+            <div className="divide-y divide-slate-800/60">
+              {missionControl.recentLogs.map(log => (
+                <div key={log.id} className="flex items-center gap-3 px-4 py-2.5">
+                  {log.status === 'APPROVE' ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  ) : (
+                    <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                  )}
+                  <span className={`text-[10px] font-bold w-14 shrink-0 ${log.status === 'APPROVE' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {log.status}
+                  </span>
+                  <span className="text-[10px] font-mono text-sky-400 w-28 shrink-0">{log.mission_id}</span>
+                  <span className="text-[10px] text-slate-400 flex-1 truncate">by {log.authorized_by}</span>
+                  {log.command && (
+                    <span className="text-[9px] font-mono text-amber-400 bg-amber-900/20 border border-amber-700/30 px-1.5 py-0.5 rounded shrink-0">
+                      CMD:{log.command}
+                    </span>
+                  )}
+                  <span className="text-[9px] font-mono text-slate-600 shrink-0">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {missionControl.pendingAuthorization && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-700/30 bg-slate-800/50">
+              <Lock className="w-5 h-5 text-amber-400" />
+              <div>
+                <p className="text-sm font-bold text-white">Safety Interlock — Human Authorization Required</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Review and authorize or deny this robot command packet</p>
+              </div>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <div className="bg-slate-800/60 border border-slate-700/30 rounded-xl p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider">Mission ID</span>
+                  <span className="text-[11px] font-mono font-bold text-sky-400">
+                    {missionControl.pendingAuthorization.missionId}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider">Command Packet</span>
+                  <span className="text-[11px] font-mono font-bold text-amber-400">
+                    {missionControl.pendingAuthorization.requestedCommand}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider">Requested At</span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {new Date(missionControl.pendingAuthorization.requestedAt).toLocaleTimeString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider">Authorized By</span>
+                  <span className="text-[11px] font-semibold text-slate-300">
+                    {session?.user.email ?? 'Operator'}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Authorizing will commit this decision to the immutable audit log and dispatch the robot command packet.
+                Denying will log the refusal and abort execution.
+              </p>
+
+              {missionControl.error && (
+                <p className="text-[11px] text-red-400 bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2">
+                  {missionControl.error}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 px-6 pb-5">
+              <button
+                onClick={() => missionControl.authorizeAction(missionControl.pendingAuthorization!.missionId, 'DENY')}
+                disabled={missionControl.isSubmitting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-red-700/40 bg-red-900/20 text-red-400 text-xs font-semibold hover:bg-red-900/40 hover:border-red-600/50 transition-all disabled:opacity-50"
+              >
+                <ShieldX className="w-4 h-4" />
+                Deny
+              </button>
+              <button
+                onClick={() => missionControl.authorizeAction(missionControl.pendingAuthorization!.missionId, 'APPROVE')}
+                disabled={missionControl.isSubmitting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-emerald-700/40 bg-emerald-900/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-900/40 hover:border-emerald-600/50 transition-all disabled:opacity-50"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                {missionControl.isSubmitting ? 'Authorizing…' : 'Approve'}
+              </button>
+            </div>
+
+            <div className="px-6 pb-4 flex justify-center">
+              <button
+                onClick={missionControl.dismissPending}
+                disabled={missionControl.isSubmitting}
+                className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors"
+              >
+                Cancel — dismiss without logging
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
