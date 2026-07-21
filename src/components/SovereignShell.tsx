@@ -29,6 +29,10 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
+  Briefcase,
+  Inbox,
+  ClipboardCheck,
+  Sparkles,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -38,10 +42,14 @@ import RoboticsDashboard from './RoboticsDashboard';
 import SafetyScanner from './SafetyScanner';
 import AuditLog from './AuditLog';
 import ConfigPanel from './config/ConfigPanel';
+import CaseManagement from './cases/CaseManagement';
+import TipIntake from './tips/TipIntake';
+import ComplianceDashboard from './compliance/ComplianceDashboard';
+import FictionalCaseGenerator from './training/FictionalCaseGenerator';
 import { ShareButton } from './ShareButton';
 import { AudioErrorBoundary } from './AudioErrorBoundary';
 
-type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
+type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'case_management' | 'tip_intake' | 'compliance' | 'training' | 'config';
 
 interface NavItem {
   id: SectionId;
@@ -88,6 +96,34 @@ const NAV_ITEMS: NavItem[] = [
     accent: 'emerald',
   },
   {
+    id: 'case_management',
+    label: 'Case Management',
+    icon: Briefcase,
+    sublabel: 'Evidence · Chain of Custody',
+    accent: 'sky',
+  },
+  {
+    id: 'tip_intake',
+    label: 'Tip Intake',
+    icon: Inbox,
+    sublabel: 'Whistleblower · Referrals',
+    accent: 'emerald',
+  },
+  {
+    id: 'compliance',
+    label: 'Compliance',
+    icon: ClipboardCheck,
+    sublabel: 'Findings · Corrective Actions',
+    accent: 'amber',
+  },
+  {
+    id: 'training',
+    label: 'Training Generator',
+    icon: Sparkles,
+    sublabel: 'Synthetic Case Files',
+    accent: 'amber',
+  },
+  {
     id: 'config',
     label: 'Configuration',
     icon: Settings,
@@ -129,6 +165,10 @@ const SECTION_HEADERS: Record<SectionId, { title: string; sub: string }> = {
   robotics: { title: 'Mechanical / Robotics', sub: 'Real-time telemetry — aerial and aquatic drone fleet — LiDAR / sonar spatial mapping' },
   safety_scanner: { title: 'Safety Scanner', sub: 'Micro-imagery pathogen detection — bacterial morphology analysis — BSL hazard classification' },
   audit_log: { title: 'Audit Log', sub: 'Federal-nexus activity documentation — all module events logged for transparency and compliance' },
+  case_management: { title: 'Case Management', sub: 'Organize lawfully-obtained evidence with chain-of-custody tracking and audit trail' },
+  tip_intake: { title: 'Tip Intake', sub: 'Record and triage whistleblower tips, then refer to appropriate law-enforcement agencies' },
+  compliance: { title: 'Compliance Dashboard', sub: 'Track audit findings, assign severity, and manage corrective actions with due dates and owners' },
+  training: { title: 'Training Generator', sub: 'Generate synthetic case files for training and demonstration — all data is fictional' },
   config: { title: 'Configuration', sub: 'Platform preferences, notification settings, security policies, and data management controls' },
 };
 
@@ -950,6 +990,10 @@ export default function SovereignShell() {
           {activeSection === 'robotics' && <RoboticsDashboard />}
           {activeSection === 'safety_scanner' && <AudioErrorBoundary><SafetyScanner /></AudioErrorBoundary>}
           {activeSection === 'audit_log' && <AuditLog />}
+          {activeSection === 'case_management' && <CaseManagement />}
+          {activeSection === 'tip_intake' && <TipIntake />}
+          {activeSection === 'compliance' && <ComplianceDashboard />}
+          {activeSection === 'training' && <FictionalCaseGenerator />}
           {activeSection === 'config' && <ConfigPanel />}
         </main>
       </div>

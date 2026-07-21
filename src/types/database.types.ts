@@ -1020,6 +1020,141 @@ export interface Database {
         }
         Relationships: []
       }
+      cases: {
+        Row: {
+          id: string
+          user_id: string
+          case_number: string
+          title: string
+          status: string
+          classification: string
+          summary: string
+          opened_at: string
+          closed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          case_number: string
+          title: string
+          status?: string
+          classification?: string
+          summary?: string
+          opened_at?: string
+          closed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          case_number?: string
+          title?: string
+          status?: string
+          classification?: string
+          summary?: string
+          opened_at?: string
+          closed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evidence_items: {
+        Row: {
+          id: string
+          case_id: string
+          user_id: string
+          item_number: string
+          title: string
+          description: string
+          evidence_type: string
+          collection_method: string
+          collected_at: string | null
+          collected_by: string
+          storage_location: string
+          hash_sha256: string
+          chain_status: string
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          case_id: string
+          user_id?: string
+          item_number: string
+          title: string
+          description?: string
+          evidence_type: string
+          collection_method?: string
+          collected_at?: string | null
+          collected_by?: string
+          storage_location?: string
+          hash_sha256?: string
+          chain_status?: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          case_id?: string
+          user_id?: string
+          item_number?: string
+          title?: string
+          description?: string
+          evidence_type?: string
+          collection_method?: string
+          collected_at?: string | null
+          collected_by?: string
+          storage_location?: string
+          hash_sha256?: string
+          chain_status?: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chain_of_custody: {
+        Row: {
+          id: string
+          evidence_id: string
+          user_id: string
+          from_holder: string
+          to_holder: string
+          action: string
+          reason: string
+          occurred_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          evidence_id: string
+          user_id?: string
+          from_holder?: string
+          to_holder?: string
+          action: string
+          reason?: string
+          occurred_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          evidence_id?: string
+          user_id?: string
+          from_holder?: string
+          to_holder?: string
+          action?: string
+          reason?: string
+          occurred_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1051,3 +1186,6 @@ export type AlertThreshold = Database['public']['Tables']['alert_thresholds']['R
 export type EvidenceFile = Database['public']['Tables']['evidence_files']['Row']
 export type ExternalFeed = Database['public']['Tables']['external_feeds']['Row']
 export type HumanAuthorizationLog = Database['public']['Tables']['human_authorization_logs']['Row']
+export type CaseRecord = Database['public']['Tables']['cases']['Row']
+export type EvidenceItem = Database['public']['Tables']['evidence_items']['Row']
+export type ChainOfCustodyEntry = Database['public']['Tables']['chain_of_custody']['Row']
