@@ -17,6 +17,8 @@ import {
   Camera,
   Square,
   Video,
+  AlertCircle,
+  Beaker,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -293,6 +295,7 @@ export default function SafetyScanner() {
   const [filterHazard, setFilterHazard] = useState('all');
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
   const [audioState, audioControls] = useAudioFeed();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -320,12 +323,16 @@ export default function SafetyScanner() {
   useEffect(() => {
     if (!session) return;
     async function loadResults() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('safety_scan_results')
         .select('*')
         .eq('user_id', session!.user.id)
         .order('scanned_at', { ascending: false })
         .limit(50);
+      if (error) {
+        setDbError(error.message);
+        return;
+      }
       if (data && data.length > 0) {
         setResults(data.map(r => ({
           id: r.id,
@@ -390,7 +397,7 @@ export default function SafetyScanner() {
     };
 
     if (session) {
-      await supabase.from('safety_scan_results').insert({
+      const { error: insertError } = await supabase.from('safety_scan_results').insert({
         user_id: session.user.id,
         scan_id: scanId,
         sample_label: label,
@@ -408,6 +415,7 @@ export default function SafetyScanner() {
         analyst: newResult.analyst,
         status: newResult.status,
       });
+      if (insertError) setDbError(insertError.message);
     }
 
     setResults(prev => [newResult, ...prev]);
@@ -436,6 +444,16 @@ export default function SafetyScanner() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <div className="flex items-center gap-2 bg-amber-900/20 border border-amber-700/30 rounded-xl px-4 py-2.5">
+        <Beaker className="w-4 h-4 text-amber-400 shrink-0" />
+        <p className="text-[11px] text-amber-300/90">Simulation mode — pathogen detection uses synthetic templates. No live ML inference is performed in-browser.</p>
+      </div>
+      {dbError && (
+        <div className="flex items-center gap-2 bg-red-900/20 border border-red-700/30 rounded-xl px-4 py-2.5">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <p className="text-[11px] text-red-400">Database error: {dbError}</p>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Scans Run</p>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -34,18 +34,26 @@ import type { GrantMilestone, ComplianceDocument, BudgetItem, InfrastructureRead
 import { AudioButton } from '../AudioButton';
 import { AudioErrorBoundary } from '../AudioErrorBoundary';
 import CountdownTimer from './CountdownTimer';
-import MilestoneTracker from './MilestoneTracker';
-import BudgetModule from './BudgetModule';
-import DocumentArchive from './DocumentArchive';
-import InfrastructureTelemetry from './InfrastructureTelemetry';
-import CostAccountingPanel from './CostAccountingPanel';
-import NISTCIProfilePanel from './NISTCIProfilePanel';
-import RBACPanel from './RBACPanel';
-import ForensicLayer from './ForensicLayer';
-import ThreatIntelligence from './ThreatIntelligence';
-import IncidentResponse from './IncidentResponse';
-import VulnerabilityScanner from './VulnerabilityScanner';
-import EnvironmentalHazardMonitor from './EnvironmentalHazardMonitor';
+const MilestoneTracker = lazy(() => import('./MilestoneTracker'));
+const BudgetModule = lazy(() => import('./BudgetModule'));
+const DocumentArchive = lazy(() => import('./DocumentArchive'));
+const InfrastructureTelemetry = lazy(() => import('./InfrastructureTelemetry'));
+const CostAccountingPanel = lazy(() => import('./CostAccountingPanel'));
+const NISTCIProfilePanel = lazy(() => import('./NISTCIProfilePanel'));
+const RBACPanel = lazy(() => import('./RBACPanel'));
+const ForensicLayer = lazy(() => import('./ForensicLayer'));
+const ThreatIntelligence = lazy(() => import('./ThreatIntelligence'));
+const IncidentResponse = lazy(() => import('./IncidentResponse'));
+const VulnerabilityScanner = lazy(() => import('./VulnerabilityScanner'));
+const EnvironmentalHazardMonitor = lazy(() => import('./EnvironmentalHazardMonitor'));
+
+function TabLoader() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <RefreshCw className="w-6 h-6 text-slate-600 animate-spin" />
+    </div>
+  );
+}
 
 type TabId = 'overview' | 'milestones' | 'budget' | 'cost_accounting' | 'documents' | 'telemetry' | 'nist_profile' | 'access_control' | 'forensics' | 'threat_intel' | 'incidents' | 'vulnerabilities' | 'env_hazards';
 
@@ -336,9 +344,11 @@ export default function Dashboard() {
   const [readings, setReadings] = useState<InfrastructureReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
+      setLoadError(null);
       const [ms, docs, budget, ir] = await Promise.all([
         fetchMilestones(),
         fetchComplianceDocuments(),
@@ -353,6 +363,8 @@ export default function Dashboard() {
       setDocuments(docs as ComplianceDocument[]);
       setBudgetItems(budget as BudgetItem[]);
       setReadings(ir as InfrastructureReading[]);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -368,6 +380,9 @@ export default function Dashboard() {
       seedDefaultData(session.user.id).then(() => {
         setSeeding(false);
         loadData();
+      }).catch((err) => {
+        setSeeding(false);
+        setLoadError(err instanceof Error ? err.message : 'Failed to seed default data');
       });
     }
   }, [loading, milestones.length, documents.length, session, seeding, loadData]);
@@ -462,8 +477,15 @@ export default function Dashboard() {
               {seeding ? 'Initializing Phase I workspace...' : 'Loading research data...'}
             </p>
           </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <AlertCircle className="w-6 h-6 text-red-400" />
+            <p className="text-sm text-red-400">Error: {loadError}</p>
+            <button onClick={loadData} className="mt-2 px-4 py-2 text-xs text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-800/60 transition-all">Retry</button>
+          </div>
         ) : (
           <>
+            <Suspense fallback={<TabLoader />}>
             {activeTab === 'overview' && (
               <OverviewTab
                 milestones={milestones}
@@ -605,6 +627,7 @@ export default function Dashboard() {
                 <EnvironmentalHazardMonitor />
               </div>
             )}
+            </Suspense>
           </>
         )}
       </main>

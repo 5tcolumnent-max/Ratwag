@@ -8,6 +8,7 @@ import {
   Waves,
   Target,
   AlertTriangle,
+  AlertCircle,
   Wind,
   ShieldCheck,
   ShieldX,
@@ -453,6 +454,7 @@ export default function RoboticsDashboard() {
   const [telemetry, setTelemetry] = useState<Record<string, DroneTelemetry>>({});
   const [ticks, setTicks] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const persistRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showAuthLog, setShowAuthLog] = useState(false);
@@ -466,11 +468,17 @@ export default function RoboticsDashboard() {
     if (!session) return;
 
     async function loadOrSeed() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('robotics_telemetry')
         .select('*')
         .eq('user_id', session!.user.id)
         .order('drone_id');
+
+      if (error) {
+        setDbError(error.message);
+        setLoaded(true);
+        return;
+      }
 
       if (data && data.length > 0) {
         const map: Record<string, DroneTelemetry> = {};
@@ -502,10 +510,12 @@ export default function RoboticsDashboard() {
           payload_active: t.payloadActive,
           spatial_map_json: '{}',
         }));
-        const { data: seeded } = await supabase
+        const { data: seeded, error: seedError } = await supabase
           .from('robotics_telemetry')
           .insert(inserts)
           .select();
+
+        if (seedError) setDbError(seedError.message);
 
         const map: Record<string, DroneTelemetry> = {};
         if (seeded) {
@@ -567,7 +577,7 @@ export default function RoboticsDashboard() {
       const drones = Object.values(telemetry);
       for (const t of drones) {
         if (!t.dbId) continue;
-        await supabase
+        const { error: persistError } = await supabase
           .from('robotics_telemetry')
           .update({
             status: t.status,
@@ -586,6 +596,7 @@ export default function RoboticsDashboard() {
             temperature_c: t.temperatureC,
           })
           .eq('id', t.dbId);
+        if (persistError) console.warn('Persist failed for', t.droneId, persistError.message);
       }
     }, 15000);
 
@@ -651,6 +662,12 @@ export default function RoboticsDashboard() {
 
   return (
     <div className="space-y-6">
+      {dbError && (
+        <div className="flex items-center gap-2 bg-red-900/20 border border-red-700/30 rounded-xl px-4 py-2.5">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <p className="text-[11px] text-red-400">Database error: {dbError}</p>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Active Units</p>

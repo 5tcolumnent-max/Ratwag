@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import {
   Shield,
   LayoutDashboard,
@@ -36,18 +36,30 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
-import Dashboard from './research/Dashboard';
-import ForensicLayer from './ForensicLayer';
-import RoboticsDashboard from './RoboticsDashboard';
-import SafetyScanner from './SafetyScanner';
-import AuditLog from './AuditLog';
-import ConfigPanel from './config/ConfigPanel';
-import CaseManagement from './cases/CaseManagement';
-import TipIntake from './tips/TipIntake';
-import ComplianceDashboard from './compliance/ComplianceDashboard';
-import FictionalCaseGenerator from './training/FictionalCaseGenerator';
 import { ShareButton } from './ShareButton';
 import { AudioErrorBoundary } from './AudioErrorBoundary';
+
+const Dashboard = lazy(() => import('./research/Dashboard'));
+const ForensicLayer = lazy(() => import('./ForensicLayer'));
+const RoboticsDashboard = lazy(() => import('./RoboticsDashboard'));
+const SafetyScanner = lazy(() => import('./SafetyScanner'));
+const AuditLog = lazy(() => import('./AuditLog'));
+const ConfigPanel = lazy(() => import('./config/ConfigPanel'));
+const CaseManagement = lazy(() => import('./cases/CaseManagement'));
+const TipIntake = lazy(() => import('./tips/TipIntake'));
+const ComplianceDashboard = lazy(() => import('./compliance/ComplianceDashboard'));
+const FictionalCaseGenerator = lazy(() => import('./training/FictionalCaseGenerator'));
+
+function SectionLoader() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <div className="flex flex-col items-center gap-3">
+        <RefreshCw className="w-6 h-6 text-slate-600 animate-spin" />
+        <p className="text-xs text-slate-600 font-mono tracking-wide">Loading module...</p>
+      </div>
+    </div>
+  );
+}
 
 type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'case_management' | 'tip_intake' | 'compliance' | 'training' | 'config';
 
@@ -972,6 +984,7 @@ export default function SovereignShell() {
         )}
 
         <main className={`flex-1 overflow-y-auto pb-16 md:pb-0 ${activeSection === 'dashboard' ? '' : 'p-4 md:p-6'}`}>
+          <Suspense fallback={<SectionLoader />}>
           {activeSection === 'dashboard' && (
             <div className="relative">
               <div className="absolute top-4 right-4 md:right-6 z-30">
@@ -995,6 +1008,7 @@ export default function SovereignShell() {
           {activeSection === 'compliance' && <ComplianceDashboard />}
           {activeSection === 'training' && <FictionalCaseGenerator />}
           {activeSection === 'config' && <ConfigPanel />}
+          </Suspense>
         </main>
       </div>
 

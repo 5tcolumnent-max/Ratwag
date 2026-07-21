@@ -5,6 +5,7 @@ import {
   Filter,
   Download,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -83,6 +84,7 @@ export default function AuditLog() {
   const { session } = useAuth();
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState<Severity | 'all'>('all');
   const [filterModule, setFilterModule] = useState('all');
@@ -92,11 +94,18 @@ export default function AuditLog() {
   const loadEntries = useCallback(async () => {
     if (!session) return;
     setLoading(true);
-    const { data } = await supabase
+    setLoadError(null);
+    const { data, error } = await supabase
       .from('audit_log_entries')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
+
+    if (error) {
+      setLoadError(error.message);
+      setLoading(false);
+      return;
+    }
 
     const mapped: LogEntry[] = (data || []).map((d: Record<string, string>) => ({
       id: d.id,
@@ -144,7 +153,7 @@ export default function AuditLog() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (autoScroll && terminalRef.current) {
@@ -274,6 +283,11 @@ export default function AuditLog() {
             <div className="flex items-center gap-2 py-4 px-2 text-xs font-mono text-sky-400">
               <RefreshCw className="w-3 h-3 animate-spin" />
               loading audit log...
+            </div>
+          ) : loadError ? (
+            <div className="flex items-center gap-2 py-4 px-2 text-xs font-mono text-red-400">
+              <AlertCircle className="w-3 h-3" />
+              Error: {loadError}
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-xs font-mono text-slate-600 py-4 px-2">
