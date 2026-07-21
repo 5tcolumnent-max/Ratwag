@@ -981,6 +981,45 @@ export interface Database {
         }
         Relationships: []
       }
+      share_events: {
+        Row: {
+          id: string
+          user_id: string
+          channel: string
+          section: string
+          entity_id: string | null
+          entity_type: string | null
+          share_url: string
+          message: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          channel: string
+          section: string
+          entity_id?: string | null
+          entity_type?: string | null
+          share_url: string
+          message?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          channel?: string
+          section?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          share_url?: string
+          message?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

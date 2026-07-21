@@ -38,6 +38,7 @@ import RoboticsDashboard from './RoboticsDashboard';
 import SafetyScanner from './SafetyScanner';
 import AuditLog from './AuditLog';
 import ConfigPanel from './config/ConfigPanel';
+import { ShareButton } from './ShareButton';
 import { AudioErrorBoundary } from './AudioErrorBoundary';
 
 type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
@@ -891,6 +892,13 @@ export default function SovereignShell() {
               <div className="flex items-center gap-3">
                 <SecurityAuditBadge />
                 <StatusBar onKillSwitch={() => setKillSwitchOpen(true)} />
+                {session && (
+                  <ShareButton
+                    userId={session.user.id}
+                    section={activeSection}
+                    entityType="section"
+                  />
+                )}
                 <button
                   onClick={() => setEvidenceModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-700 border border-red-600 text-white text-xs font-bold hover:bg-red-600 active:scale-95 transition-all shadow-lg shadow-red-950/50"
@@ -912,6 +920,14 @@ export default function SovereignShell() {
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-white truncate">{header.title}</p>
             </div>
+            {session && (
+              <ShareButton
+                userId={session.user.id}
+                section={activeSection}
+                entityType="section"
+                label="Share"
+              />
+            )}
           </div>
         )}
 
