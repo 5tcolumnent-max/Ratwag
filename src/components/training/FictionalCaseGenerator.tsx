@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   Sparkles,
-  RefreshCw,
   Briefcase,
   FileText,
   Shield,
@@ -9,7 +8,6 @@ import {
   Plus,
   CheckCircle2,
   Loader2,
-  Trash2,
   ScrollText,
 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';

@@ -1155,6 +1155,192 @@ export interface Database {
         }
         Relationships: []
       }
+      tips: {
+        Row: {
+          id: string
+          user_id: string
+          source_channel: string
+          is_anonymous: boolean
+          submitter_name: string | null
+          submitter_contact: string | null
+          category: string
+          priority: string
+          subject: string
+          description: string
+          incident_location: string
+          incident_date: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          source_channel?: string
+          is_anonymous?: boolean
+          submitter_name?: string | null
+          submitter_contact?: string | null
+          category?: string
+          priority?: string
+          subject: string
+          description?: string
+          incident_location?: string
+          incident_date?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          source_channel?: string
+          is_anonymous?: boolean
+          submitter_name?: string | null
+          submitter_contact?: string | null
+          category?: string
+          priority?: string
+          subject?: string
+          description?: string
+          incident_location?: string
+          incident_date?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tip_referrals: {
+        Row: {
+          id: string
+          tip_id: string
+          user_id: string
+          referred_to_agency: string
+          referred_to_contact: string
+          referral_reason: string
+          referral_date: string
+          status: string
+          agency_case_number: string
+          notes: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tip_id: string
+          user_id?: string
+          referred_to_agency: string
+          referred_to_contact?: string
+          referral_reason?: string
+          referral_date?: string
+          status?: string
+          agency_case_number?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tip_id?: string
+          user_id?: string
+          referred_to_agency?: string
+          referred_to_contact?: string
+          referral_reason?: string
+          referral_date?: string
+          status?: string
+          agency_case_number?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_findings: {
+        Row: {
+          id: string
+          user_id: string
+          control_id: string
+          control_family: string
+          title: string
+          description: string
+          severity: string
+          status: string
+          reviewer: string
+          identified_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          control_id: string
+          control_family?: string
+          title: string
+          description?: string
+          severity?: string
+          status?: string
+          reviewer?: string
+          identified_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          control_id?: string
+          control_family?: string
+          title?: string
+          description?: string
+          severity?: string
+          status?: string
+          reviewer?: string
+          identified_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      corrective_actions: {
+        Row: {
+          id: string
+          finding_id: string
+          user_id: string
+          title: string
+          description: string
+          owner: string
+          status: string
+          due_date: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          finding_id: string
+          user_id?: string
+          title: string
+          description?: string
+          owner?: string
+          status?: string
+          due_date?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          finding_id?: string
+          user_id?: string
+          title?: string
+          description?: string
+          owner?: string
+          status?: string
+          due_date?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1189,3 +1375,7 @@ export type HumanAuthorizationLog = Database['public']['Tables']['human_authoriz
 export type CaseRecord = Database['public']['Tables']['cases']['Row']
 export type EvidenceItem = Database['public']['Tables']['evidence_items']['Row']
 export type ChainOfCustodyEntry = Database['public']['Tables']['chain_of_custody']['Row']
+export type TipRecord = Database['public']['Tables']['tips']['Row']
+export type TipReferral = Database['public']['Tables']['tip_referrals']['Row']
+export type ComplianceFinding = Database['public']['Tables']['compliance_findings']['Row']
+export type CorrectiveAction = Database['public']['Tables']['corrective_actions']['Row']

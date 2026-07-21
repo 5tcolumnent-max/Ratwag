@@ -3,7 +3,6 @@ import {
   Inbox,
   Plus,
   ChevronLeft,
-  ChevronRight,
   Trash2,
   Mail,
   Phone,
@@ -17,7 +16,6 @@ import {
   Loader2,
   Shield,
   EyeOff,
-  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 import {
@@ -651,7 +649,7 @@ function NewTipModal({ onClose, onCreate }: {
           description: description.trim(),
           incident_location: incidentLocation.trim(),
           incident_date: incidentDate ? new Date(incidentDate).toISOString() : null,
-        })} valid={valid} submitLabel="Create Tip" />
+        })} valid={!!valid} submitLabel="Create Tip" />
       </div>
     </ModalShell>
   );

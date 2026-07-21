@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Briefcase,
   Plus,
-  ChevronRight,
   ChevronLeft,
+  ChevronRight,
   Trash2,
   FileText,
   Camera,
@@ -613,7 +613,7 @@ function NewCaseModal({ onClose, onCreate }: {
             onChange={e => setSummary(e.target.value)}
           />
         </Field>
-        <ModalActions onClose={onClose} onSubmit={() => valid && onCreate({ case_number: caseNumber.trim(), title: title.trim(), classification, summary: summary.trim() })} valid={valid} />
+        <ModalActions onClose={onClose} onSubmit={() => valid && onCreate({ case_number: caseNumber.trim(), title: title.trim(), classification, summary: summary.trim() })} valid={!!valid} />
       </div>
     </ModalShell>
   );
@@ -673,7 +673,7 @@ function NewEvidenceModal({ onClose, onAdd }: {
           collection_method: collectionMethod.trim(),
           collected_by: collectedBy.trim(),
           storage_location: storageLocation.trim(),
-        })} valid={valid} />
+        })} valid={!!valid} />
       </div>
     </ModalShell>
   );

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { Json } from '../types/database.types';
 
 export type ShareChannel = 'twitter' | 'linkedin' | 'reddit' | 'email' | 'copy';
 
@@ -37,7 +38,7 @@ export async function recordShareEvent(
       entity_type: input.entityType ?? null,
       share_url: input.shareUrl,
       message: input.message ?? '',
-      metadata: input.metadata ?? {},
+      metadata: (input.metadata ?? {}) as Json,
     })
     .select('id, channel, section, entity_id, entity_type, share_url, message, created_at')
     .maybeSingle();

@@ -3,7 +3,6 @@ import {
   ClipboardCheck,
   Plus,
   ChevronLeft,
-  ChevronRight,
   Trash2,
   AlertTriangle,
   X,
@@ -608,7 +607,7 @@ function NewFindingModal({ onClose, onCreate }: {
           description: description.trim(),
           severity,
           reviewer: reviewer.trim(),
-        })} valid={valid} />
+        })} valid={!!valid} />
       </div>
     </ModalShell>
   );

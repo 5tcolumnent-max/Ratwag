@@ -61,11 +61,6 @@ function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function pickN<T>(arr: readonly T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n);
-}
-
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
