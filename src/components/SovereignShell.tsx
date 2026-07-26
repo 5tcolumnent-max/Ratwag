@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Shield,
   LayoutDashboard,
@@ -29,39 +29,18 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  Briefcase,
-  Inbox,
-  ClipboardCheck,
-  Sparkles,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
-import { ShareButton } from './ShareButton';
+import Dashboard from './research/Dashboard';
+import ForensicLayer from './ForensicLayer';
+import RoboticsDashboard from './RoboticsDashboard';
+import SafetyScanner from './SafetyScanner';
+import AuditLog from './AuditLog';
+import ConfigPanel from './config/ConfigPanel';
 import { AudioErrorBoundary } from './AudioErrorBoundary';
 
-const Dashboard = lazy(() => import('./research/Dashboard'));
-const ForensicLayer = lazy(() => import('./ForensicLayer'));
-const RoboticsDashboard = lazy(() => import('./RoboticsDashboard'));
-const SafetyScanner = lazy(() => import('./SafetyScanner'));
-const AuditLog = lazy(() => import('./AuditLog'));
-const ConfigPanel = lazy(() => import('./config/ConfigPanel'));
-const CaseManagement = lazy(() => import('./cases/CaseManagement'));
-const TipIntake = lazy(() => import('./tips/TipIntake'));
-const ComplianceDashboard = lazy(() => import('./compliance/ComplianceDashboard'));
-const FictionalCaseGenerator = lazy(() => import('./training/FictionalCaseGenerator'));
-
-function SectionLoader() {
-  return (
-    <div className="flex items-center justify-center py-24">
-      <div className="flex flex-col items-center gap-3">
-        <RefreshCw className="w-6 h-6 text-slate-600 animate-spin" />
-        <p className="text-xs text-slate-600 font-mono tracking-wide">Loading module...</p>
-      </div>
-    </div>
-  );
-}
-
-type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'case_management' | 'tip_intake' | 'compliance' | 'training' | 'config';
+type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
 
 interface NavItem {
   id: SectionId;
@@ -108,34 +87,6 @@ const NAV_ITEMS: NavItem[] = [
     accent: 'emerald',
   },
   {
-    id: 'case_management',
-    label: 'Case Management',
-    icon: Briefcase,
-    sublabel: 'Evidence · Chain of Custody',
-    accent: 'sky',
-  },
-  {
-    id: 'tip_intake',
-    label: 'Tip Intake',
-    icon: Inbox,
-    sublabel: 'Whistleblower · Referrals',
-    accent: 'emerald',
-  },
-  {
-    id: 'compliance',
-    label: 'Compliance',
-    icon: ClipboardCheck,
-    sublabel: 'Findings · Corrective Actions',
-    accent: 'amber',
-  },
-  {
-    id: 'training',
-    label: 'Training Generator',
-    icon: Sparkles,
-    sublabel: 'Synthetic Case Files',
-    accent: 'amber',
-  },
-  {
     id: 'config',
     label: 'Configuration',
     icon: Settings,
@@ -177,10 +128,6 @@ const SECTION_HEADERS: Record<SectionId, { title: string; sub: string }> = {
   robotics: { title: 'Mechanical / Robotics', sub: 'Real-time telemetry — aerial and aquatic drone fleet — LiDAR / sonar spatial mapping' },
   safety_scanner: { title: 'Safety Scanner', sub: 'Micro-imagery pathogen detection — bacterial morphology analysis — BSL hazard classification' },
   audit_log: { title: 'Audit Log', sub: 'Federal-nexus activity documentation — all module events logged for transparency and compliance' },
-  case_management: { title: 'Case Management', sub: 'Organize lawfully-obtained evidence with chain-of-custody tracking and audit trail' },
-  tip_intake: { title: 'Tip Intake', sub: 'Record and triage whistleblower tips, then refer to appropriate law-enforcement agencies' },
-  compliance: { title: 'Compliance Dashboard', sub: 'Track audit findings, assign severity, and manage corrective actions with due dates and owners' },
-  training: { title: 'Training Generator', sub: 'Generate synthetic case files for training and demonstration — all data is fictional' },
   config: { title: 'Configuration', sub: 'Platform preferences, notification settings, security policies, and data management controls' },
 };
 
@@ -944,13 +891,6 @@ export default function SovereignShell() {
               <div className="flex items-center gap-3">
                 <SecurityAuditBadge />
                 <StatusBar onKillSwitch={() => setKillSwitchOpen(true)} />
-                {session && (
-                  <ShareButton
-                    userId={session.user.id}
-                    section={activeSection}
-                    entityType="section"
-                  />
-                )}
                 <button
                   onClick={() => setEvidenceModalOpen(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-700 border border-red-600 text-white text-xs font-bold hover:bg-red-600 active:scale-95 transition-all shadow-lg shadow-red-950/50"
@@ -972,19 +912,10 @@ export default function SovereignShell() {
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-white truncate">{header.title}</p>
             </div>
-            {session && (
-              <ShareButton
-                userId={session.user.id}
-                section={activeSection}
-                entityType="section"
-                label="Share"
-              />
-            )}
           </div>
         )}
 
         <main className={`flex-1 overflow-y-auto pb-16 md:pb-0 ${activeSection === 'dashboard' ? '' : 'p-4 md:p-6'}`}>
-          <Suspense fallback={<SectionLoader />}>
           {activeSection === 'dashboard' && (
             <div className="relative">
               <div className="absolute top-4 right-4 md:right-6 z-30">
@@ -1003,12 +934,7 @@ export default function SovereignShell() {
           {activeSection === 'robotics' && <RoboticsDashboard />}
           {activeSection === 'safety_scanner' && <AudioErrorBoundary><SafetyScanner /></AudioErrorBoundary>}
           {activeSection === 'audit_log' && <AuditLog />}
-          {activeSection === 'case_management' && <CaseManagement />}
-          {activeSection === 'tip_intake' && <TipIntake />}
-          {activeSection === 'compliance' && <ComplianceDashboard />}
-          {activeSection === 'training' && <FictionalCaseGenerator />}
           {activeSection === 'config' && <ConfigPanel />}
-          </Suspense>
         </main>
       </div>
 

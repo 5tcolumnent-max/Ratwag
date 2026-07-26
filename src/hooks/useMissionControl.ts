@@ -26,7 +26,6 @@ export function useMissionControl(userId: string | null, authorizedBy: string) {
   });
 
   const sendRobotCommand = useCallback(async (missionId: string, command: string) => {
-    if (!userId) return;
     await supabase.from('audit_log_entries').insert({
       user_id: userId,
       module: 'MissionControl',

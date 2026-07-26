@@ -14,7 +14,6 @@ import {
   Hand,
   Eye,
   Zap,
-  Beaker,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -261,14 +260,13 @@ export default function ForensicLayer() {
 
   const logToAudit = useCallback(async (action: string, detail: string) => {
     if (!session) return;
-    const { error } = await supabase.from('audit_log_entries').insert({
+    await supabase.from('audit_log_entries').insert({
       user_id: session.user.id,
       module: 'ForensicLayer',
       action,
       detail,
       severity: 'info',
     });
-    if (error) console.warn('Failed to log audit entry:', error.message);
   }, [session]);
 
   const enumerateCameras = useCallback(async (stream: MediaStream) => {
@@ -378,10 +376,6 @@ export default function ForensicLayer() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-center gap-2 bg-amber-900/20 border border-amber-700/30 rounded-xl px-4 py-2.5">
-        <Beaker className="w-4 h-4 text-amber-400 shrink-0" />
-        <p className="text-[11px] text-amber-300/90">Simulation mode — VSR/SLR analysis uses synthetic data templates. No live ML inference is performed in-browser.</p>
-      </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-4">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
