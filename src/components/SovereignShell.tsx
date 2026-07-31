@@ -7,7 +7,6 @@ import {
   Microscope,
   Terminal,
   LogOut,
-  ShieldAlert,
   ChevronLeft,
   ChevronRight,
   Activity,
@@ -34,7 +33,6 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
 import Dashboard from './research/Dashboard';
-import ThreatDashboard from './ThreatDashboard';
 import ForensicLayer from './ForensicLayer';
 import RoboticsDashboard from './RoboticsDashboard';
 import SafetyScanner from './SafetyScanner';
@@ -42,7 +40,7 @@ import AuditLog from './AuditLog';
 import ConfigPanel from './config/ConfigPanel';
 import { AudioErrorBoundary } from './AudioErrorBoundary';
 
-type SectionId = 'dashboard' | 'threat_monitor' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
+type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
 
 interface NavItem {
   id: SectionId;
@@ -59,13 +57,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: LayoutDashboard,
     sublabel: 'Research & Compliance',
     accent: 'sky',
-  },
-  {
-    id: 'threat_monitor',
-    label: 'Threat Monitor',
-    icon: ShieldAlert,
-    sublabel: 'Water Grid · Real-Time Alerts',
-    accent: 'red',
   },
   {
     id: 'forensic_ai',
@@ -105,7 +96,6 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCENT_ACTIVE: Record<string, string> = {
-  red: 'bg-red-900/40 border-red-700/50 text-red-300',
   sky: 'bg-sky-900/40 border-sky-700/50 text-sky-300',
   violet: 'bg-violet-900/30 border-violet-700/40 text-violet-300',
   cyan: 'bg-cyan-900/30 border-cyan-700/40 text-cyan-300',
@@ -115,7 +105,6 @@ const ACCENT_ACTIVE: Record<string, string> = {
 };
 
 const ACCENT_INDICATOR: Record<string, string> = {
-  red: 'bg-red-400',
   sky: 'bg-sky-400',
   violet: 'bg-violet-400',
   cyan: 'bg-cyan-400',
@@ -125,7 +114,6 @@ const ACCENT_INDICATOR: Record<string, string> = {
 };
 
 const ACCENT_ICON: Record<string, string> = {
-  red: 'text-red-400',
   sky: 'text-sky-400',
   violet: 'text-violet-400',
   cyan: 'text-cyan-400',
@@ -136,7 +124,6 @@ const ACCENT_ICON: Record<string, string> = {
 
 const SECTION_HEADERS: Record<SectionId, { title: string; sub: string }> = {
   dashboard: { title: 'Research Administration', sub: 'DOE Genesis Mission Phase I — Grants.gov compliance portal' },
-  threat_monitor: { title: 'Threat Monitor', sub: 'Municipal water infrastructure — real-time anomaly detection and threat response' },
   forensic_ai: { title: 'Forensic AI', sub: 'Video feed analysis with Visual Speech Recognition (VSR) and Sign Language Recognition (SLR)' },
   robotics: { title: 'Mechanical / Robotics', sub: 'Real-time telemetry — aerial and aquatic drone fleet — LiDAR / sonar spatial mapping' },
   safety_scanner: { title: 'Safety Scanner', sub: 'Micro-imagery pathogen detection — bacterial morphology analysis — BSL hazard classification' },
@@ -943,7 +930,6 @@ export default function SovereignShell() {
               <Dashboard />
             </div>
           )}
-            {activeSection === 'threat_monitor' && <ThreatDashboard />}
           {activeSection === 'forensic_ai' && <AudioErrorBoundary><ForensicLayer /></AudioErrorBoundary>}
           {activeSection === 'robotics' && <RoboticsDashboard />}
           {activeSection === 'safety_scanner' && <AudioErrorBoundary><SafetyScanner /></AudioErrorBoundary>}

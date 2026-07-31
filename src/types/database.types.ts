@@ -948,72 +948,6 @@ export interface Database {
         }
         Relationships: []
       }
-      utility_telemetry: {
-        Row: {
-          id: string
-          station_id: string
-          metric_type: string
-          reading_value: number
-          status_flag: string
-          recorded_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          station_id: string
-          metric_type: string
-          reading_value: number
-          status_flag: string
-          recorded_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          station_id?: string
-          metric_type?: string
-          reading_value?: number
-          status_flag?: string
-          recorded_at?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
-      active_threat_alerts: {
-        Row: {
-          id: string
-          station_id: string
-          threat_level: string
-          metric_type: string
-          anomalous_value: number | null
-          description: string
-          triggered_at: string
-          created_at: string
-          resolved: boolean
-        }
-        Insert: {
-          id?: string
-          station_id: string
-          threat_level: string
-          metric_type: string
-          anomalous_value?: number | null
-          description: string
-          triggered_at?: string
-          created_at?: string
-          resolved?: boolean
-        }
-        Update: {
-          id?: string
-          station_id?: string
-          threat_level?: string
-          metric_type?: string
-          anomalous_value?: number | null
-          description?: string
-          triggered_at?: string
-          created_at?: string
-          resolved?: boolean
-        }
-        Relationships: []
-      }
       external_feeds: {
         Row: {
           id: string
@@ -1077,6 +1011,4 @@ export type Alert = Database['public']['Tables']['alerts']['Row']
 export type AlertThreshold = Database['public']['Tables']['alert_thresholds']['Row']
 export type EvidenceFile = Database['public']['Tables']['evidence_files']['Row']
 export type ExternalFeed = Database['public']['Tables']['external_feeds']['Row']
-export type ActiveThreatAlert = Database['public']['Tables']['active_threat_alerts']['Row']
-export type UtilityTelemetry = Database['public']['Tables']['utility_telemetry']['Row']
 export type HumanAuthorizationLog = Database['public']['Tables']['human_authorization_logs']['Row']
