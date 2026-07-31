@@ -988,6 +988,7 @@ export interface Database {
           description: string
           triggered_at: string
           created_at: string
+          resolved: boolean
         }
         Insert: {
           id?: string
@@ -998,6 +999,7 @@ export interface Database {
           description: string
           triggered_at?: string
           created_at?: string
+          resolved?: boolean
         }
         Update: {
           id?: string
@@ -1008,6 +1010,7 @@ export interface Database {
           description?: string
           triggered_at?: string
           created_at?: string
+          resolved?: boolean
         }
         Relationships: []
       }
@@ -1074,4 +1077,6 @@ export type Alert = Database['public']['Tables']['alerts']['Row']
 export type AlertThreshold = Database['public']['Tables']['alert_thresholds']['Row']
 export type EvidenceFile = Database['public']['Tables']['evidence_files']['Row']
 export type ExternalFeed = Database['public']['Tables']['external_feeds']['Row']
+export type ActiveThreatAlert = Database['public']['Tables']['active_threat_alerts']['Row']
+export type UtilityTelemetry = Database['public']['Tables']['utility_telemetry']['Row']
 export type HumanAuthorizationLog = Database['public']['Tables']['human_authorization_logs']['Row']
