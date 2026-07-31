@@ -978,6 +978,39 @@ export interface Database {
         }
         Relationships: []
       }
+      active_threat_alerts: {
+        Row: {
+          id: string
+          station_id: string
+          threat_level: string
+          metric_type: string
+          anomalous_value: number | null
+          description: string
+          triggered_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          station_id: string
+          threat_level: string
+          metric_type: string
+          anomalous_value?: number | null
+          description: string
+          triggered_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          station_id?: string
+          threat_level?: string
+          metric_type?: string
+          anomalous_value?: number | null
+          description?: string
+          triggered_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       external_feeds: {
         Row: {
           id: string
