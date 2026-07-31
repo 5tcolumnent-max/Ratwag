@@ -26,6 +26,7 @@ class TelemetryBridge:
         # Enforce scoped API tokens and mutual security headers
         self.session.headers.update({
             "Authorization": f"Bearer {self.api_token}",
+            "apikey": self.api_token,
             "Content-Type": "application/json",
             "X-Data-Channel": "OT-Telemetry-Readonly"
         })
@@ -66,8 +67,9 @@ class TelemetryBridge:
 
 # Example execution hook for local utility sensor polling
 if __name__ == "__main__":
-    AI_ENDPOINT = os.getenv("AI_TELEMETRY_ENDPOINT", "https://api.rex-trinity-welfare.org/v1/telemetry/ingest")
-    BROADCAST_TOKEN = os.getenv("REX_BROADCAST_TOKEN", "secure-token-placeholder")
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "https://yvgpozrzmpxtuiemycci.supabase.co")
+    AI_ENDPOINT = os.getenv("AI_TELEMETRY_ENDPOINT", f"{SUPABASE_URL}/functions/v1/telemetry-ingest")
+    BROADCAST_TOKEN = os.getenv("SUPABASE_ANON_KEY", os.getenv("REX_BROADCAST_TOKEN", ""))
     bridge = TelemetryBridge(target_endpoint=AI_ENDPOINT, api_token=BROADCAST_TOKEN)
 
     # Simulated incoming sensor reading from a municipal water system pump station

@@ -948,6 +948,36 @@ export interface Database {
         }
         Relationships: []
       }
+      utility_telemetry: {
+        Row: {
+          id: string
+          station_id: string
+          metric_type: string
+          reading_value: number
+          status_flag: string
+          recorded_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          station_id: string
+          metric_type: string
+          reading_value: number
+          status_flag: string
+          recorded_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          station_id?: string
+          metric_type?: string
+          reading_value?: number
+          status_flag?: string
+          recorded_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       external_feeds: {
         Row: {
           id: string
