@@ -329,14 +329,9 @@ export function getStoredCredential(userId: string): RegisteredCredential | null
 }
 
 export const PRIVILEGED_EMAIL = '5tcolumnent@gmail.com';
-export const PRIVILEGED_EMAILS = [
-  '5tcolumnent@gmail.com',
-  'mrflipmos34@yahoo.com',
-];
 
 export function isPrivilegedUser(email: string): boolean {
-  const normalized = email.trim().toLowerCase();
-  return PRIVILEGED_EMAILS.some(e => e.toLowerCase() === normalized);
+  return email.trim().toLowerCase() === PRIVILEGED_EMAIL.toLowerCase();
 }
 
 export function storePrivilegedSession(refreshToken: string, credentialId: string): void {
