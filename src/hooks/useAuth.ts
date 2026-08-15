@@ -1,1 +1,1 @@
-export { useAuth } from '../services/authContext';
+export { useAuth } from '../lib/authContext';
