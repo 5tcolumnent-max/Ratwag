@@ -45,7 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsPasswordRecovery(true);
       setRecoveryTokenValid(false);
       window.history.replaceState(null, '', window.location.pathname);
-    } else if (hasRecoveryHash && !hasErrorHash) {
+      setLoading(false);
+      return;
+    }
+
+    if (hasRecoveryHash && !hasErrorHash) {
       setRecoveryTokenValid(null);
     }
 

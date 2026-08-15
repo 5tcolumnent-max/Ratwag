@@ -60,7 +60,7 @@ const MODALITY_OPTIONS: ModalityOption[] = [
 ];
 
 export function AuthPage() {
-  const { signIn, signUp, signInWithProvider, resetPassword, updatePassword, signInWithRefreshToken, signOut, isPasswordRecovery, recoveryTokenValid, clearPasswordRecovery } = useAuth();
+  const { signIn, signUp, signInWithProvider, resetPassword, updatePassword, signInWithRefreshToken, isPasswordRecovery, recoveryTokenValid, clearPasswordRecovery } = useAuth();
   const [view, setView] = useState<AuthView>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -213,11 +213,6 @@ export function AuthPage() {
       setSuccess('Password updated successfully. You can now sign in with your new password.');
       setPassword('');
       setConfirmPassword('');
-      try {
-        await signOut();
-      } catch {
-        // sign-out failure is non-critical; password was still updated
-      }
       setTimeout(() => {
         clearPasswordRecovery();
         switchView('login');
