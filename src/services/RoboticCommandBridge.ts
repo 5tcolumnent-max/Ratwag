@@ -1,7 +1,11 @@
 import { supabase } from './supabase';
-import type { RoboticsTelemetry } from '../types/database.types';
+import type { Database } from '../types/database.types';
 
-export async function fetchRoboticsTelemetry(userId: string): Promise<RoboticsTelemetry[]> {
+type RoboticsTelemetryRow = Database['public']['Tables']['robotics_telemetry']['Row'];
+type RoboticsTelemetryInsert = Database['public']['Tables']['robotics_telemetry']['Insert'];
+type RoboticsTelemetryUpdate = Database['public']['Tables']['robotics_telemetry']['Update'];
+
+export async function fetchRoboticsTelemetry(userId: string): Promise<RoboticsTelemetryRow[]> {
   const { data, error } = await supabase
     .from('robotics_telemetry')
     .select('*')
@@ -12,9 +16,9 @@ export async function fetchRoboticsTelemetry(userId: string): Promise<RoboticsTe
 }
 
 export async function seedRoboticsTelemetry(
-  userId: string,
-  seeds: RoboticsTelemetry['Insert'][]
-): Promise<RoboticsTelemetry[]> {
+  _userId: string,
+  seeds: RoboticsTelemetryInsert[]
+): Promise<RoboticsTelemetryRow[]> {
   const { data, error } = await supabase
     .from('robotics_telemetry')
     .insert(seeds)
@@ -33,7 +37,7 @@ export async function updateDroneStatus(dbId: string, status: string): Promise<v
 
 export async function persistDroneTelemetry(
   dbId: string,
-  partial: Partial<RoboticsTelemetry['Update']>
+  partial: RoboticsTelemetryUpdate
 ): Promise<void> {
   const { error } = await supabase
     .from('robotics_telemetry')
