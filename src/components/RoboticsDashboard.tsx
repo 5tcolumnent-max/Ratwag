@@ -21,7 +21,6 @@ import { useAuth } from '../lib/authContext';
 import { useFeedHeartbeat, formatLastSeen, statusColor as hbStatusColor } from '../hooks/useFeedHeartbeat';
 import { SignalStrengthBar } from './FeedHeartbeatBadge';
 import { useMissionControl } from '../hooks/useMissionControl';
-import ConnectionBar from './ConnectionBar';
 
 type DroneType = 'aerial' | 'aquatic';
 type DroneStatus = 'standby' | 'active' | 'returning' | 'emergency' | 'offline';
@@ -650,13 +649,8 @@ export default function RoboticsDashboard() {
     ? Math.round(droneList.reduce((s, t) => s + t.battery, 0) / droneList.length)
     : 0;
 
-  const avgSignal = droneList.length > 0
-    ? Math.round(droneList.reduce((s, t) => s + t.signal, 0) / droneList.length)
-    : 0;
-
   return (
     <div className="space-y-6">
-      <ConnectionBar wifiSignal={avgSignal} />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-4">
           <p className="text-[10px] text-slate-500 uppercase tracking-wider">Active Units</p>

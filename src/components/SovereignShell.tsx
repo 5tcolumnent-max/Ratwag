@@ -29,11 +29,6 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  Glasses,
-  Mic,
-  MicOff,
-  Square,
-  Radio as RadioIcon,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
@@ -215,325 +210,6 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-interface GlassesFrame {
-  id: string;
-  type: 'picture';
-  name: string;
-  dataUrl: string;
-  size: number;
-}
-
-type GlassesCameraState = 'idle' | 'active' | 'error';
-type GlassesMicState = 'idle' | 'listening' | 'error';
-
-function SmartGlassesPanel({
-  onCaptureFrame,
-  onTranscript,
-}: {
-  onCaptureFrame: (frame: GlassesFrame) => void;
-  onTranscript: (text: string) => void;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recognitionRef = useRef<unknown>(null);
-
-  const [cameraState, setCameraState] = useState<GlassesCameraState>('idle');
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [micState, setMicState] = useState<GlassesMicState>('idle');
-  const [micError, setMicError] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState('');
-  const [interimText, setInterimText] = useState('');
-
-  const startCamera = async () => {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setCameraState('active');
-    } catch {
-      setCameraState('error');
-      setCameraError('Camera access denied or unavailable. Check browser permissions.');
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraState('idle');
-  };
-
-  const captureFrame = () => {
-    if (!videoRef.current || cameraState !== 'active') return;
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth || 1280;
-    canvas.height = videoRef.current.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-    const size = Math.round((dataUrl.length * 3) / 4);
-    onCaptureFrame({
-      id: crypto.randomUUID(),
-      type: 'picture',
-      name: `glasses_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`,
-      dataUrl,
-      size,
-    });
-  };
-
-  const startListening = () => {
-    setMicError(null);
-    const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown })
-        .SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: new () => unknown }).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setMicState('error');
-      setMicError('Voice recognition not supported in this browser. Use Chrome or Edge.');
-      return;
-    }
-
-    const recognition = new SpeechRecognition() as {
-      continuous: boolean;
-      interimResults: boolean;
-      lang: string;
-      onresult: (event: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => void;
-      onerror: (event: { error: string }) => void;
-      onend: () => void;
-      start: () => void;
-      stop: () => void;
-    };
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event) => {
-      let interim = '';
-      let final = '';
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) final += result[0].transcript;
-        else interim += result[0].transcript;
-      }
-      if (final) {
-        setTranscript(prev => {
-          const updated = prev + (prev && !prev.endsWith(' ') ? ' ' : '') + final.trim();
-          onTranscript(updated);
-          return updated;
-        });
-      }
-      setInterimText(interim);
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        setMicState('error');
-        setMicError('Microphone access denied. Check browser permissions.');
-      } else if (event.error === 'no-speech') {
-        // ignore — recognition will auto-restart on end
-      } else {
-        setMicState('error');
-        setMicError(`Voice recognition error: ${event.error}`);
-      }
-    };
-
-    recognition.onend = () => {
-      if (micState === 'listening') {
-        try { recognition.start(); } catch { /* already started */ }
-      }
-    };
-
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
-      setMicState('listening');
-    } catch {
-      setMicState('error');
-      setMicError('Failed to start voice recognition.');
-    }
-  };
-
-  const stopListening = () => {
-    const recognition = recognitionRef.current as { stop: () => void } | null;
-    if (recognition) {
-      try { recognition.stop(); } catch { /* noop */ }
-    }
-    recognitionRef.current = null;
-    setMicState('idle');
-    setInterimText('');
-  };
-
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-      const recognition = recognitionRef.current as { stop: () => void } | null;
-      if (recognition) try { recognition.stop(); } catch { /* noop */ }
-    };
-  }, []);
-
-  const cameraActive = cameraState === 'active';
-  const micListening = micState === 'listening';
-
-  return (
-    <div className="bg-slate-800/40 border border-cyan-700/30 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-cyan-800/30 bg-cyan-950/20">
-        <Glasses className="w-3.5 h-3.5 text-cyan-400" />
-        <span className="text-[11px] font-bold text-cyan-300 tracking-wide">SMART GLASSES — HANDSFREE LIVE INPUT</span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${cameraActive ? 'bg-cyan-400 animate-pulse' : 'bg-slate-700'}`} />
-          <span className={`text-[9px] font-mono uppercase ${cameraActive ? 'text-cyan-400' : 'text-slate-600'}`}>
-            {cameraActive ? 'CAM LIVE' : 'CAM OFF'}
-          </span>
-          <span className="w-px h-3 bg-slate-700/50 mx-0.5" />
-          <span className={`w-1.5 h-1.5 rounded-full ${micListening ? 'bg-emerald-400 animate-pulse' : 'bg-slate-700'}`} />
-          <span className={`text-[9px] font-mono uppercase ${micListening ? 'text-emerald-400' : 'text-slate-600'}`}>
-            {micListening ? 'MIC LIVE' : 'MIC OFF'}
-          </span>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {/* Camera preview */}
-        <div className="relative rounded-lg overflow-hidden bg-slate-950 border border-slate-700/40 aspect-video">
-          <video
-            ref={videoRef}
-            className={`w-full h-full object-cover ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
-            playsInline
-            muted
-          />
-          {!cameraActive && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-600">
-              <Glasses className="w-8 h-8 opacity-40" />
-              <p className="text-[10px] font-mono uppercase tracking-widest">Camera Standby</p>
-            </div>
-          )}
-          {cameraActive && (
-            <>
-              <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[8px] font-mono text-red-400 uppercase tracking-wider">REC</span>
-              </div>
-              <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">
-                <span className="text-[8px] font-mono text-cyan-400">FOV: 120°</span>
-              </div>
-              {/* HUD corner brackets */}
-              <div className="absolute top-6 left-2 w-4 h-4 border-l-2 border-t-2 border-cyan-400/50 rounded-tl" />
-              <div className="absolute top-6 right-2 w-4 h-4 border-r-2 border-t-2 border-cyan-400/50 rounded-tr" />
-              <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-cyan-400/50 rounded-bl" />
-              <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-cyan-400/50 rounded-br" />
-            </>
-          )}
-        </div>
-
-        {/* Camera controls */}
-        <div className="flex items-center gap-2">
-          {cameraActive ? (
-            <>
-              <button
-                onClick={captureFrame}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-cyan-700/40 bg-cyan-900/20 text-cyan-300 text-[11px] font-semibold hover:bg-cyan-900/40 active:scale-95 transition-all"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                Capture Frame
-              </button>
-              <button
-                onClick={stopCamera}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-700/40 bg-slate-800/40 text-slate-400 text-[11px] font-semibold hover:bg-slate-700/40 active:scale-95 transition-all"
-              >
-                <Square className="w-3.5 h-3.5" />
-                Stop
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={startCamera}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-cyan-700/40 bg-cyan-900/20 text-cyan-300 text-[11px] font-semibold hover:bg-cyan-900/40 active:scale-95 transition-all"
-            >
-              <Glasses className="w-3.5 h-3.5" />
-              Connect Glasses Camera
-            </button>
-          )}
-        </div>
-
-        {cameraState === 'error' && cameraError && (
-          <p className="text-[10px] text-red-400 bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2 flex items-center gap-1.5">
-            <AlertTriangle className="w-3 h-3 shrink-0" />
-            {cameraError}
-          </p>
-        )}
-
-        {/* Voice / audio section */}
-        <div className="border-t border-slate-700/30 pt-3 space-y-2">
-          <div className="flex items-center gap-2">
-            {micListening ? (
-              <>
-                <button
-                  onClick={stopListening}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-red-700/40 bg-red-900/20 text-red-300 text-[11px] font-semibold hover:bg-red-900/40 active:scale-95 transition-all"
-                >
-                  <MicOff className="w-3.5 h-3.5" />
-                  Stop Listening
-                </button>
-                <div className="flex items-center gap-1 px-2.5 py-2 rounded-lg border border-emerald-700/30 bg-emerald-900/20">
-                  <RadioIcon className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span className="text-[9px] font-mono text-emerald-400 uppercase">Live</span>
-                </div>
-              </>
-            ) : (
-              <button
-                onClick={startListening}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-emerald-700/40 bg-emerald-900/20 text-emerald-300 text-[11px] font-semibold hover:bg-emerald-900/40 active:scale-95 transition-all"
-              >
-                <Mic className="w-3.5 h-3.5" />
-                Start Hands-Free Voice
-              </button>
-            )}
-          </div>
-
-          {micState === 'error' && micError && (
-            <p className="text-[10px] text-red-400 bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3 h-3 shrink-0" />
-              {micError}
-            </p>
-          )}
-
-          {(transcript || interimText) && (
-            <div className="bg-slate-900/60 border border-slate-700/40 rounded-lg p-3">
-              <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                <Mic className="w-2.5 h-2.5" />
-                Live Transcript
-              </p>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                {transcript}
-                {interimText && <span className="text-slate-500 italic"> {interimText}</span>}
-              </p>
-              {transcript && (
-                <button
-                  onClick={() => { setTranscript(''); setInterimText(''); }}
-                  className="mt-2 text-[9px] text-slate-600 hover:text-slate-400 transition-colors"
-                >
-                  Clear transcript
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: string }) {
   const [description, setDescription] = useState('');
   const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
@@ -541,7 +217,6 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
   const [submitted, setSubmitted] = useState(false);
   const [loggedAt, setLoggedAt] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
-  const [glassesTranscript, setGlassesTranscript] = useState('');
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingMediaType, setPendingMediaType] = useState<MediaAttachment['type'] | null>(null);
@@ -577,24 +252,6 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
-  const handleGlassesCapture = (frame: GlassesFrame) => {
-    setAttachments(prev => [...prev, {
-      id: frame.id,
-      type: 'picture',
-      name: frame.name,
-      dataUrl: frame.dataUrl,
-      size: frame.size,
-    }]);
-  };
-
-  const handleGlassesTranscript = (text: string) => {
-    setGlassesTranscript(text);
-    setDescription(prev => {
-      if (prev && !prev.endsWith(' ')) return prev + ' ' + text;
-      return text;
-    });
-  };
-
   const handleSubmit = async () => {
     if (!description.trim()) return;
     setSubmitting(true);
@@ -604,15 +261,11 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
       ? ` | Attachments (${attachments.length}): ${attachments.map(a => `${a.type.toUpperCase()}:${a.name}`).join(', ')}`
       : '';
 
-    const glassesSummary = glassesTranscript
-      ? ` | Smart Glasses Voice Transcript: "${glassesTranscript.trim()}"`
-      : '';
-
     await supabase.from('audit_log_entries').insert({
       user_id: userId,
       module: 'EvidenceInput',
       action: '4:11_INPUT',
-      detail: `[HIGH-PRIORITY EVIDENCE] Timestamp: ${new Date(timestamp).toLocaleString()} — ${description.trim()}${attachmentSummary}${glassesSummary}`,
+      detail: `[HIGH-PRIORITY EVIDENCE] Timestamp: ${new Date(timestamp).toLocaleString()} — ${description.trim()}${attachmentSummary}`,
       severity: 'critical',
       entity_type: 'evidence',
     });
@@ -658,12 +311,6 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
             <label>Evidence Description</label>
             <div class="value">${description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
           </div>
-          ${glassesTranscript ? `
-          <div class="field">
-            <label>Smart Glasses Voice Transcript</label>
-            <div class="value">${glassesTranscript.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-          </div>
-          ` : ''}
           <div class="field">
             <label>Audit Log Entry Time</label>
             <div class="value">${loggedAt ? new Date(loggedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'long' }) : '—'}</div>
@@ -719,11 +366,6 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
                 type="file"
                 className="hidden"
                 onChange={handleFileChange}
-              />
-
-              <SmartGlassesPanel
-                onCaptureFrame={handleGlassesCapture}
-                onTranscript={handleGlassesTranscript}
               />
 
               <div>
@@ -845,12 +487,6 @@ function EvidenceModal({ onClose, userId }: { onClose: () => void; userId: strin
                   <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest">Description</p>
                   <p className="text-xs text-slate-300 mt-0.5 leading-relaxed line-clamp-3">{description.trim()}</p>
                 </div>
-                {glassesTranscript && (
-                  <div>
-                    <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest">Glasses Voice Transcript</p>
-                    <p className="text-xs text-slate-300 mt-0.5 leading-relaxed line-clamp-3">{glassesTranscript}</p>
-                  </div>
-                )}
                 {attachments.length > 0 && (
                   <div>
                     <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest">Attachments</p>
