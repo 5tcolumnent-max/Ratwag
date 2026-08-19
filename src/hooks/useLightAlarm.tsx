@@ -9,6 +9,7 @@ export interface AlarmEvent {
   detail: string;
   source: string;
   timestamp: number;
+  imageUrl?: string;
 }
 
 interface LightAlarmContextValue {

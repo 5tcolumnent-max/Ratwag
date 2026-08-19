@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
 import { useAudioFeed } from '../hooks/useAudioFeed';
 import { useLightAlarm } from '../hooks/useLightAlarm';
+import { captureFrameFromStream, fileToDataUrl } from '../utils/capture';
 import AudioLevelMeter from './AudioLevelMeter';
 
 type HazardLevel = 'low' | 'medium' | 'high' | 'critical';
@@ -422,11 +423,15 @@ export default function SafetyScanner() {
 
     if (newResult.pathogenDetected) {
       const isConviction = (newResult.hazardLevel === 'high' || newResult.hazardLevel === 'critical') && newResult.confidencePct >= 90;
+      let imageUrl: string | undefined;
+      if (liveStream) imageUrl = (await captureFrameFromStream(liveStream)) ?? undefined;
+      else if (uploadedFile) imageUrl = (await fileToDataUrl(uploadedFile)) ?? undefined;
       triggerAlarm({
         severity: isConviction ? 'conviction' : 'match',
         title: isConviction ? 'Pathogen Solid Conviction Bundle' : 'Pathogen Match',
         detail: `${newResult.pathogenClass} — ${newResult.confidencePct}% confidence · ${newResult.hazardLevel.toUpperCase()} hazard · ${label}`,
         source: 'Safety Scanner',
+        imageUrl,
       });
     }
 

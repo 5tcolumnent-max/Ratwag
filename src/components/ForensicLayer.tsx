@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
 import { useAudioFeed } from '../hooks/useAudioFeed';
 import { useLightAlarm } from '../hooks/useLightAlarm';
+import { captureFrameFromStream, fileToDataUrl } from '../utils/capture';
 import AudioLevelMeter from './AudioLevelMeter';
 
 type FeedStatus = 'idle' | 'loading' | 'active' | 'analyzing' | 'complete' | 'error';
@@ -361,11 +362,15 @@ export default function ForensicLayer() {
       const result = MOCK_VSR_RESULTS[Math.floor(Math.random() * MOCK_VSR_RESULTS.length)];
       setVsrResults(prev => [{ ...result, timestamp: new Date().toISOString() }, ...prev].slice(0, 5));
       const isConviction = result.confidence >= 90;
+      let imageUrl: string | undefined;
+      if (primaryStream) imageUrl = (await captureFrameFromStream(primaryStream)) ?? undefined;
+      else if (uploadedFile) imageUrl = (await fileToDataUrl(uploadedFile)) ?? undefined;
       triggerAlarm({
         severity: isConviction ? 'conviction' : 'match',
         title: isConviction ? 'VSR Solid Conviction Bundle' : 'VSR Match',
         detail: `${result.transcript?.slice(0, 80) ?? ''} — ${result.confidence.toFixed(1)}% confidence`,
         source: 'Forensic AI · VSR',
+        imageUrl,
       });
     }
     if (mode === 'slr' || mode === 'combined') {
@@ -374,11 +379,16 @@ export default function ForensicLayer() {
       const topDetection = shuffled[0];
       if (topDetection) {
         const isConviction = topDetection.confidence >= 90;
+        let imageUrl: string | undefined;
+        if (secondaryStream) imageUrl = (await captureFrameFromStream(secondaryStream)) ?? undefined;
+        else if (primaryStream) imageUrl = (await captureFrameFromStream(primaryStream)) ?? undefined;
+        else if (uploadedFile) imageUrl = (await fileToDataUrl(uploadedFile)) ?? undefined;
         triggerAlarm({
           severity: isConviction ? 'conviction' : 'match',
           title: isConviction ? 'SLR Solid Conviction Bundle' : 'SLR Match',
           detail: `Sign "${topDetection.sign}" — ${topDetection.confidence.toFixed(1)}% confidence · ${topDetection.handedness} hand`,
           source: 'Forensic AI · SLR',
+          imageUrl,
         });
       }
     }
