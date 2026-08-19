@@ -123,7 +123,7 @@ const ACCENT_ICON: Record<string, string> = {
 };
 
 const SECTION_HEADERS: Record<SectionId, { title: string; sub: string }> = {
-  dashboard: { title: 'Research Administration', sub: 'Federal research compliance portal — Grants.gov submission ready' },
+  dashboard: { title: 'Research Administration', sub: 'DOE Genesis Mission Phase I — Grants.gov compliance portal' },
   forensic_ai: { title: 'Forensic AI', sub: 'Video feed analysis with Visual Speech Recognition (VSR) and Sign Language Recognition (SLR)' },
   robotics: { title: 'Mechanical / Robotics', sub: 'Real-time telemetry — aerial and aquatic drone fleet — LiDAR / sonar spatial mapping' },
   safety_scanner: { title: 'Safety Scanner', sub: 'Micro-imagery pathogen detection — bacterial morphology analysis — BSL hazard classification' },

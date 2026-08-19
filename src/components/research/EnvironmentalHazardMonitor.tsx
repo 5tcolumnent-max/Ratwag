@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/authContext';
-import { useAgency } from '../../lib/agencies';
 
 type HazardLevel = 'clear' | 'warning' | 'critical';
 type HeartbeatStatus = 'online' | 'stale' | 'offline';
@@ -164,7 +163,6 @@ function speakAlarm(message: string) {
 }
 
 function CriticalOverlay({ alert, onDismiss }: { alert: AlertState; onDismiss: () => void }) {
-  const { agency } = useAgency();
   const [blink, setBlink] = useState(true);
 
   useEffect(() => {
@@ -219,7 +217,7 @@ function CriticalOverlay({ alert, onDismiss }: { alert: AlertState; onDismiss: (
         </div>
 
         <p className="text-[11px] text-red-700 mt-6 font-mono">
-          Logged to audit trail &nbsp;|&nbsp; NIST PE-13/PE-14 &nbsp;|&nbsp; {agency.reportPrefix} Safety Record
+          Logged to audit trail &nbsp;|&nbsp; NIST PE-13/PE-14 &nbsp;|&nbsp; DOE-Genesis Safety Record
         </p>
       </div>
     </div>

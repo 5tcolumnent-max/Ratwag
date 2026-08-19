@@ -7,7 +7,6 @@ import {
   buildDOEVarianceReport,
 } from '../../compliance/FederalCostAccounting';
 import type { CostValidationIssue, TimeEffortRecord, DOEVarianceReport } from '../../compliance/FederalCostAccounting';
-import { useAgency } from '../../lib/agencies';
 
 interface Props {
   items: BudgetItem[];
@@ -169,7 +168,6 @@ function CategoryRow({
 }
 
 function DOEVariancePanel({ doeReport }: { doeReport: DOEVarianceReport }) {
-  const { agency } = useAgency();
   const { compliant, thresholdPct, lines, totalBudgeted, totalActual, totalVariance, totalVariancePct } = doeReport;
 
   return (
@@ -186,7 +184,7 @@ function DOEVariancePanel({ doeReport }: { doeReport: DOEVarianceReport }) {
             </div>
           )}
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">{agency.varianceLabel} Status</h3>
+            <h3 className="text-sm font-semibold text-slate-200">DOE Budget Compliance Status</h3>
             <p className="text-xs text-slate-500 mt-0.5">Variance threshold: ±{thresholdPct}% per 2 CFR § 200.308</p>
           </div>
         </div>

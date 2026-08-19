@@ -727,7 +727,6 @@ export interface Database {
           display_name: string
           organization: string
           role_designation: string
-          agency_id: string
           notify_critical: boolean
           notify_warning: boolean
           notify_info: boolean
@@ -743,7 +742,6 @@ export interface Database {
           display_name?: string
           organization?: string
           role_designation?: string
-          agency_id?: string
           notify_critical?: boolean
           notify_warning?: boolean
           notify_info?: boolean
@@ -759,7 +757,6 @@ export interface Database {
           display_name?: string
           organization?: string
           role_designation?: string
-          agency_id?: string
           notify_critical?: boolean
           notify_warning?: boolean
           notify_info?: boolean

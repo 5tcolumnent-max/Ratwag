@@ -30,7 +30,6 @@ import {
 import { buildDOEVarianceReport } from '../../compliance/FederalCostAccounting';
 import { fetchLatestReadings, aggregateRiskProfile } from '../../telemetry/InfrastructureMonitor';
 import { supabase } from '../../lib/supabase';
-import { useAgency } from '../../lib/agencies';
 import type { GrantMilestone, ComplianceDocument, BudgetItem, InfrastructureReading } from '../../lib/database.types';
 import { AudioButton } from '../AudioButton';
 import { AudioErrorBoundary } from '../AudioErrorBoundary';
@@ -116,7 +115,6 @@ function OverviewTab({
   const totalSpent = budgetItems.reduce((s, i) => s + Number(i.spent_amount), 0);
   const utilizationPct = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
   const doeVariance = buildDOEVarianceReport(budgetItems, 10);
-  const { agency } = useAgency();
 
   const upcoming = milestones
     .filter(m => m.status !== 'completed')
@@ -175,7 +173,7 @@ function OverviewTab({
             {doeVariance.compliant ? 'Compliant' : 'Out of Compliance'}
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-200">{agency.varianceLabel} — Variance Reporting</p>
+            <p className="text-sm font-semibold text-slate-200">DOE Budget Compliance — Variance Reporting</p>
             <p className="text-xs text-slate-500 mt-0.5">
               Direct Labor · Equipment · Consumables &nbsp;|&nbsp; ±{doeVariance.thresholdPct}% threshold per 2 CFR § 200.308
             </p>
@@ -331,7 +329,6 @@ function OverviewTab({
 
 export default function Dashboard() {
   const { session, signOut } = useAuth();
-  const { agency } = useAgency();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [milestones, setMilestones] = useState<GrantMilestone[]>([]);
   const [documents, setDocuments] = useState<ComplianceDocument[]>([]);
@@ -389,14 +386,14 @@ export default function Dashboard() {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
                   <h1 className="text-sm md:text-base font-bold text-white tracking-tight truncate">
-                    {agency.shortName} {agency.grantProgram} — {agency.phase}
+                    DOE Genesis Mission — Phase I
                   </h1>
                   <span className="hidden sm:inline text-[10px] font-semibold text-sky-300 bg-sky-900/40 border border-sky-800/50 px-2 py-0.5 rounded-full uppercase tracking-widest shrink-0">
-                    {agency.complianceFramework.includes('NIST') ? 'NIST-800-53' : agency.shortName}
+                    NIST-800-53
                   </span>
                 </div>
                 <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 truncate">
-                  <span className="hidden sm:inline">Federal Research Administration &nbsp;|&nbsp; PI: </span>{piEmail}
+                  <span className="hidden sm:inline">Research Administration System &nbsp;|&nbsp; PI: </span>{piEmail}
                 </p>
               </div>
             </div>
@@ -453,7 +450,7 @@ export default function Dashboard() {
 
       <main id="report-container" className="report-container max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8">
         <div className="report-stamp hidden print:flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
-          <span className="text-xs font-semibold text-slate-300 tracking-widest uppercase">{agency.shortName} {agency.grantProgram} — Research Command</span>
+          <span className="text-xs font-semibold text-slate-300 tracking-widest uppercase">DOE Genesis — Research Command</span>
           <span className="text-xs text-slate-500 tabular-nums">
             Generated: {new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
@@ -462,7 +459,7 @@ export default function Dashboard() {
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <RefreshCw className="w-6 h-6 text-sky-400 animate-spin" />
             <p className="text-sm text-slate-500">
-              {seeding ? `Initializing ${agency.phase} workspace...` : 'Loading research data...'}
+              {seeding ? 'Initializing Phase I workspace...' : 'Loading research data...'}
             </p>
           </div>
         ) : (
@@ -481,7 +478,7 @@ export default function Dashboard() {
                 <div className="mb-6">
                   <h2 className="text-lg font-bold text-white">Administrative Lifecycle</h2>
                   <p className="text-sm text-slate-500 mt-1">
-                    {agency.phase} submission milestones — Grants.gov deadline {new Date(agency.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    Phase I submission milestones — Grants.gov deadline April 28, 2026
                   </p>
                 </div>
                 <MilestoneTracker milestones={milestones} onRefresh={loadData} />
@@ -614,8 +611,8 @@ export default function Dashboard() {
 
       <footer className="border-t border-slate-800/40 mt-10 md:mt-16 py-4 md:py-6">
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-1 text-[10px] md:text-xs text-slate-600 text-center sm:text-left">
-          <span>{agency.shortName} {agency.grantProgram} {agency.phase} — Federal Research Administration System</span>
-          <span>{agency.complianceFramework} Compliant &nbsp;|&nbsp; Grants.gov Submission {new Date(agency.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+          <span>DOE Genesis Mission Phase I — Research Administration System</span>
+          <span>NIST SP 800-53 Compliant &nbsp;|&nbsp; Grants.gov Submission April 28, 2026</span>
         </div>
       </footer>
     </div>

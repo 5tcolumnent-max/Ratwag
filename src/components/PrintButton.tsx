@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { Printer, FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { useAgency } from '../lib/agencies';
 
 export function PrintButton() {
-  const { agency } = useAgency();
   const [exporting, setExporting] = useState(false);
 
   async function exportPDF() {
@@ -44,7 +42,7 @@ export function PrintButton() {
       }
 
       const date = new Date().toISOString().slice(0, 10);
-      pdf.save(`${agency.reportPrefix}-Report-${date}.pdf`);
+      pdf.save(`DOE-Genesis-Report-${date}.pdf`);
     } finally {
       if (stamp) stamp.style.display = '';
       setExporting(false);

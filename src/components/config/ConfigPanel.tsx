@@ -20,13 +20,11 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/authContext';
-import { AGENCIES, clearAgencyCache } from '../../lib/agencies';
 
 interface Preferences {
   display_name: string;
   organization: string;
   role_designation: string;
-  agency_id: string;
   notify_critical: boolean;
   notify_warning: boolean;
   notify_info: boolean;
@@ -39,7 +37,6 @@ const DEFAULTS: Preferences = {
   display_name: '',
   organization: '',
   role_designation: 'Principal Investigator',
-  agency_id: 'doe',
   notify_critical: true,
   notify_warning: true,
   notify_info: false,
@@ -191,17 +188,6 @@ function ProfileSection({ prefs, onChange }: { prefs: Preferences; onChange: (p:
                 { label: 'Read-Only Observer', value: 'Read-Only Observer' },
               ]}
             />
-          </div>
-          <div>
-            <FieldLabel>Federal Agency</FieldLabel>
-            <SelectInput
-              value={prefs.agency_id}
-              onChange={v => onChange({ agency_id: v })}
-              options={AGENCIES.map(a => ({ label: `${a.shortName} — ${a.name}`, value: a.id }))}
-            />
-            <p className="text-[11px] text-slate-500 mt-2">
-              Select the federal agency your research administration work is tied to. All compliance modules, reports, and deadlines will adapt to this selection.
-            </p>
           </div>
         </div>
       </SectionCard>
@@ -401,7 +387,7 @@ function DataSection({ prefs, onChange }: { prefs: Preferences; onChange: (p: Pa
             ]}
           />
           <p className="text-[11px] text-slate-500 mt-2">
-            Audit entries older than this period may be archived. Federal grant compliance requires a minimum of 3 years for federal records.
+            Audit entries older than this period may be archived. DOE grant compliance requires a minimum of 3 years for federal records.
           </p>
         </div>
       </SectionCard>
@@ -413,8 +399,7 @@ function DataSection({ prefs, onChange }: { prefs: Preferences; onChange: (p: Pa
             { label: 'Compliance Framework', value: 'NIST SP 800-53 Rev. 5' },
             { label: 'Encryption', value: 'AES-256 (at rest & in transit)' },
             { label: 'Database', value: 'Supabase PostgreSQL (RLS enforced)' },
-            { label: 'Active Agency', value: AGENCIES.find(a => a.id === prefs.agency_id)?.shortName || 'DOE' },
-            { label: 'Grant Program', value: (() => { const a = AGENCIES.find(a => a.id === prefs.agency_id); return a ? `${a.shortName} ${a.grantProgram} ${a.phase}` : 'DOE Genesis Mission Phase I'; })() },
+            { label: 'Grant Program', value: 'DOE Genesis Mission Phase I' },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between gap-4">
               <span className="text-[11px] text-slate-500 shrink-0">{label}</span>
@@ -453,7 +438,6 @@ export default function ConfigPanel() {
           display_name: data.display_name ?? '',
           organization: data.organization ?? '',
           role_designation: data.role_designation ?? 'Principal Investigator',
-          agency_id: data.agency_id ?? 'doe',
           notify_critical: data.notify_critical ?? true,
           notify_warning: data.notify_warning ?? true,
           notify_info: data.notify_info ?? false,
@@ -487,7 +471,6 @@ export default function ConfigPanel() {
       setError(upsertErr.message);
     } else {
       setSavedAt(new Date());
-      clearAgencyCache();
     }
   };
 
