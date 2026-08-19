@@ -39,6 +39,7 @@ import SafetyScanner from './SafetyScanner';
 import AuditLog from './AuditLog';
 import ConfigPanel from './config/ConfigPanel';
 import { AudioErrorBoundary } from './AudioErrorBoundary';
+import { LightAlarmToggle } from './LightAlarmOverlay';
 
 type SectionId = 'dashboard' | 'forensic_ai' | 'robotics' | 'safety_scanner' | 'audit_log' | 'config';
 
@@ -157,6 +158,7 @@ function StatusBar({ onKillSwitch }: { onKillSwitch: () => void }) {
           HTTP
         </span>
       )}
+      <LightAlarmToggle />
       <button
         onClick={onKillSwitch}
         title="Emergency Kill Switch — mute all audio and streams"

@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes alarm-strobe-red {
+  0%, 100% { border-color: rgba(239,68,68,0.9); box-shadow: inset 0 0 80px 8px rgba(239,68,68,0.45); }
+  50% { border-color: rgba(239,68,68,0.25); box-shadow: inset 0 0 120px 16px rgba(239,68,68,0.15); }
+}
+@keyframes alarm-strobe-amber {
+  0%, 100% { border-color: rgba(245,158,11,0.9); box-shadow: inset 0 0 80px 8px rgba(245,158,11,0.4); }
+  50% { border-color: rgba(245,158,11,0.25); box-shadow: inset 0 0 120px 16px rgba(245,158,11,0.12); }
+}
+@keyframes alarm-bar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-alarm-strobe-red {
+  animation: alarm-strobe-red 0.5s ease-in-out infinite;
+}
+.animate-alarm-strobe-amber {
+  animation: alarm-strobe-amber 0.5s ease-in-out infinite;
+}
+.animate-alarm-bar {
+  animation: alarm-bar 6s linear forwards;
+}
+
 @media print {
   .no-print {
     display: none !important;

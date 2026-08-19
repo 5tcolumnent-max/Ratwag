@@ -2,6 +2,8 @@ import { Shield, RefreshCw } from 'lucide-react';
 import { useAuth } from './lib/authContext';
 import { AuthPage } from './components/AuthPage';
 import SovereignShell from './components/SovereignShell';
+import { LightAlarmProvider } from './hooks/useLightAlarm';
+import { LightAlarmOverlay } from './components/LightAlarmOverlay';
 
 function App() {
   const { session, loading: authLoading, isPasswordRecovery } = useAuth();
@@ -24,7 +26,12 @@ function App() {
     return <AuthPage />;
   }
 
-  return <SovereignShell />;
+  return (
+    <LightAlarmProvider>
+      <SovereignShell />
+      <LightAlarmOverlay />
+    </LightAlarmProvider>
+  );
 }
 
 export default App;
