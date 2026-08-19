@@ -173,7 +173,7 @@ export async function registerCredential(
       publicKey: {
         challenge,
         rp: {
-          name: 'Kingdom Guardian',
+          name: 'Sovereign',
           id: window.location.hostname,
         },
         user: {

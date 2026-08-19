@@ -20,7 +20,7 @@ export interface ComplianceMetrics {
 const DEFAULT_MILESTONES: Omit<GrantMilestone, 'id' | 'user_id' | 'created_at' | 'updated_at'>[] = [
   {
     title: 'Technical Narrative Draft',
-    description: 'Complete the 5-page DOE technical narrative covering innovation hypothesis, research methodology, and Phase I deliverables.',
+    description: 'Complete the 5-page technical narrative covering innovation hypothesis, research methodology, and Phase I deliverables.',
     due_date: '2026-04-12T23:59:00Z',
     status: 'in_progress',
     phase: 'Phase_I',

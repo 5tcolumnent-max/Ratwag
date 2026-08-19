@@ -3,6 +3,7 @@ import { DollarSign, Users, Cpu, TrendingUp, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { BudgetItem } from '../../lib/database.types';
 import { useAuth } from '../../lib/authContext';
+import { useAgency } from '../../lib/agencies';
 
 interface Props {
   items: BudgetItem[];
@@ -68,6 +69,7 @@ interface NewItemForm {
 
 export default function BudgetModule({ items, onRefresh }: Props) {
   const { session } = useAuth();
+  const { agency } = useAgency();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<NewItemForm>({
@@ -120,7 +122,7 @@ export default function BudgetModule({ items, onRefresh }: Props) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-200">Total Budget Utilization</h3>
-            <p className="text-xs text-slate-500 mt-0.5">DOE Genesis Mission Phase I</p>
+            <p className="text-xs text-slate-500 mt-0.5">{agency.shortName} {agency.grantProgram} {agency.phase}</p>
           </div>
           <div className="text-right">
             <p className="text-xl font-bold text-white">{formatCurrency(totalAllocated)}</p>

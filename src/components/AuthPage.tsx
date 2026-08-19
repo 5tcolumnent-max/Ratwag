@@ -327,9 +327,9 @@ export function AuthPage() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 sm:p-8">
             <div className="flex items-center justify-center gap-3 mb-2">
               <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">Kingdom Guardian</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">Sovereign</h1>
             </div>
-            <p className="text-blue-100 text-center text-sm">Animal Welfare Intervention System</p>
+            <p className="text-blue-100 text-center text-sm">Federal Research Administration Platform</p>
           </div>
 
           <div className="px-6 py-6 sm:p-8">
@@ -522,7 +522,7 @@ export function AuthPage() {
                     {isLogin ? 'Welcome Back' : 'Create Account'}
                   </h2>
                   <p className="text-gray-600">
-                    {isLogin ? 'Log in to access the monitoring dashboard' : 'Register to get started'}
+                    {isLogin ? 'Sign in to your federal research workspace' : 'Register to get started'}
                   </p>
                 </div>
 

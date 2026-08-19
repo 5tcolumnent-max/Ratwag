@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Clock, AlertTriangle, CheckCircle } from 'lucide-react';
-
-const DEADLINE = new Date('2026-04-28T23:59:00Z');
+import { useAgency } from '../../lib/agencies';
 
 interface TimeLeft {
   days: number;
@@ -11,9 +10,9 @@ interface TimeLeft {
   expired: boolean;
 }
 
-function getTimeLeft(): TimeLeft {
+function getTimeLeft(deadline: Date): TimeLeft {
   const now = new Date();
-  const diff = DEADLINE.getTime() - now.getTime();
+  const diff = deadline.getTime() - now.getTime();
   if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
   return {
     days: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -42,12 +41,18 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 }
 
 export default function CountdownTimer() {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft());
+  const { agency } = useAgency();
+  const [deadline, setDeadline] = useState(() => new Date(agency.deadline));
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => getTimeLeft(deadline));
 
   useEffect(() => {
-    const interval = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    setDeadline(new Date(agency.deadline));
+  }, [agency.deadline]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setTimeLeft(getTimeLeft(deadline)), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [deadline]);
 
   const isUrgent = timeLeft.days <= 7 && !timeLeft.expired;
   const isCritical = timeLeft.days <= 3 && !timeLeft.expired;
@@ -58,7 +63,7 @@ export default function CountdownTimer() {
         <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
         <div>
           <p className="text-sm font-semibold text-emerald-300">Submission Window Closed</p>
-          <p className="text-xs text-emerald-500">April 28, 2026 — Grants.gov</p>
+          <p className="text-xs text-emerald-500">{deadline.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} — Grants.gov</p>
         </div>
       </div>
     );
@@ -84,7 +89,7 @@ export default function CountdownTimer() {
           <p className={`text-xs font-semibold uppercase tracking-wider ${isCritical ? 'text-red-300' : isUrgent ? 'text-amber-300' : 'text-slate-300'}`}>
             Grants.gov Submission Deadline
           </p>
-          <p className="text-[10px] text-slate-500">April 28, 2026 — DOE Genesis Mission Phase I</p>
+          <p className="text-[10px] text-slate-500">{deadline.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} — {agency.shortName} {agency.grantProgram} {agency.phase}</p>
         </div>
       </div>
       <div className="flex items-end gap-3">
