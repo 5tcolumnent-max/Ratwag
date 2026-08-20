@@ -21,8 +21,6 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/authContext';
 import { useAudioFeed } from '../hooks/useAudioFeed';
-import { useLightAlarm } from '../hooks/useLightAlarm';
-import { captureFrameFromStream, fileToDataUrl } from '../utils/capture';
 import AudioLevelMeter from './AudioLevelMeter';
 
 type HazardLevel = 'low' | 'medium' | 'high' | 'critical';
@@ -288,7 +286,6 @@ function ImagePlaceholder({ scanning, file, stream }: { scanning: boolean; file:
 
 export default function SafetyScanner() {
   const { session } = useAuth();
-  const { trigger: triggerAlarm } = useLightAlarm();
   const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
   const [results, setResults] = useState<ScanResult[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -420,20 +417,6 @@ export default function SafetyScanner() {
       `Sample: ${label} | Hazard: ${newResult.hazardLevel.toUpperCase()} | Pathogen: ${newResult.pathogenDetected ? newResult.pathogenClass : 'none'}`,
       newResult.hazardLevel === 'high' || newResult.hazardLevel === 'critical' ? 'warning' : 'info'
     );
-
-    if (newResult.pathogenDetected) {
-      const isConviction = (newResult.hazardLevel === 'high' || newResult.hazardLevel === 'critical') && newResult.confidencePct >= 90;
-      let imageUrl: string | undefined;
-      if (liveStream) imageUrl = (await captureFrameFromStream(liveStream)) ?? undefined;
-      else if (uploadedFile) imageUrl = (await fileToDataUrl(uploadedFile)) ?? undefined;
-      triggerAlarm({
-        severity: isConviction ? 'conviction' : 'match',
-        title: isConviction ? 'Pathogen Solid Conviction Bundle' : 'Pathogen Match',
-        detail: `${newResult.pathogenClass} — ${newResult.confidencePct}% confidence · ${newResult.hazardLevel.toUpperCase()} hazard · ${label}`,
-        source: 'Safety Scanner',
-        imageUrl,
-      });
-    }
 
     setTimeout(() => {
       setScanStatus('idle');
