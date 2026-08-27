@@ -981,6 +981,102 @@ export interface Database {
         }
         Relationships: []
       }
+      merchant_transactions: {
+        Row: {
+          id: string
+          created_at: string
+          merchant_id: string
+          terminal_id: string
+          transaction_amount: number
+          currency: string
+          customer_geo_location: string | null
+          card_country: string | null
+          spending_velocity_count: number
+          fraud_risk_score: number
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          merchant_id: string
+          terminal_id: string
+          transaction_amount: number
+          currency?: string
+          customer_geo_location?: string | null
+          card_country?: string | null
+          spending_velocity_count?: number
+          fraud_risk_score?: number
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          merchant_id?: string
+          terminal_id?: string
+          transaction_amount?: number
+          currency?: string
+          customer_geo_location?: string | null
+          card_country?: string | null
+          spending_velocity_count?: number
+          fraud_risk_score?: number
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      stix_threat_indicators: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          indicator_id: string
+          indicator_type: string
+          value: string
+          severity: string
+          confidence: number
+          source: string
+          description: string | null
+          stix_bundle: Json | null
+          active: boolean
+          first_seen: string
+          last_seen: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          indicator_id: string
+          indicator_type?: string
+          value: string
+          severity?: string
+          confidence?: number
+          source?: string
+          description?: string | null
+          stix_bundle?: Json | null
+          active?: boolean
+          first_seen?: string
+          last_seen?: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          indicator_id?: string
+          indicator_type?: string
+          value?: string
+          severity?: string
+          confidence?: number
+          source?: string
+          description?: string | null
+          stix_bundle?: Json | null
+          active?: boolean
+          first_seen?: string
+          last_seen?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1012,3 +1108,5 @@ export type AlertThreshold = Database['public']['Tables']['alert_thresholds']['R
 export type EvidenceFile = Database['public']['Tables']['evidence_files']['Row']
 export type ExternalFeed = Database['public']['Tables']['external_feeds']['Row']
 export type HumanAuthorizationLog = Database['public']['Tables']['human_authorization_logs']['Row']
+export type MerchantTransaction = Database['public']['Tables']['merchant_transactions']['Row']
+export type StixThreatIndicator = Database['public']['Tables']['stix_threat_indicators']['Row']
