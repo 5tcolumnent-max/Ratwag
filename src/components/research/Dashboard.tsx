@@ -18,7 +18,6 @@ import {
   Siren,
   ScanLine,
   Flame,
-  CreditCard,
 } from 'lucide-react';
 import { PrintButton } from '../PrintButton';
 import { useAuth } from '../../lib/authContext';
@@ -47,9 +46,8 @@ import ThreatIntelligence from './ThreatIntelligence';
 import IncidentResponse from './IncidentResponse';
 import VulnerabilityScanner from './VulnerabilityScanner';
 import EnvironmentalHazardMonitor from './EnvironmentalHazardMonitor';
-import MerchantFraudMonitor from './MerchantFraudMonitor';
 
-type TabId = 'overview' | 'milestones' | 'budget' | 'cost_accounting' | 'documents' | 'telemetry' | 'nist_profile' | 'access_control' | 'forensics' | 'threat_intel' | 'incidents' | 'vulnerabilities' | 'env_hazards' | 'merchant_fraud';
+type TabId = 'overview' | 'milestones' | 'budget' | 'cost_accounting' | 'documents' | 'telemetry' | 'nist_profile' | 'access_control' | 'forensics' | 'threat_intel' | 'incidents' | 'vulnerabilities' | 'env_hazards';
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -65,7 +63,6 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'incidents', label: 'Incidents', icon: Siren },
   { id: 'vulnerabilities', label: 'Vulnerabilities', icon: ScanLine },
   { id: 'env_hazards', label: 'Env. Hazards', icon: Flame },
-  { id: 'merchant_fraud', label: 'Merchant Fraud', icon: CreditCard },
 ];
 
 function StatCard({
@@ -606,17 +603,6 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <EnvironmentalHazardMonitor />
-              </div>
-            )}
-            {activeTab === 'merchant_fraud' && (
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-lg font-bold text-white">Merchant Fraud Monitoring</h2>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Live transaction anomaly detection — high-velocity, geo-mismatch, and risk-scored fraud flagging with STIX 2.1 forwarding
-                  </p>
-                </div>
-                <MerchantFraudMonitor />
               </div>
             )}
           </>

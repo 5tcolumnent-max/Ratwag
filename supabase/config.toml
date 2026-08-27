@@ -1,5 +1,0 @@
-project_id = "kingdom-guardian"
-
-[functions.detect-merchant-fraud]
-verify_jwt = false
-entrypoint = "./functions/detect-merchant-fraud/index.ts"
